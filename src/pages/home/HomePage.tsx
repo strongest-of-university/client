@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { HomePage as Layout } from "./HomePage.styles";
-import "../../App.css";
+import * as S from "./HomePage.styles";
 
 const slides = [
   "/images/lake-aerial.jpg",
@@ -12,6 +11,7 @@ const slides = [
 export default function HomePage() {
   const [slide, setSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const timer = window.setInterval(
       () => setSlide((current) => (current + 1) % slides.length),
@@ -25,52 +25,54 @@ export default function HomePage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
   return (
-    <Layout>
-      <section className="hero-section screenshot-hero">
+    <S.HomePage>
+      <S.Hero>
         {slides.map((image, index) => (
-          <img
+          <S.HeroImage
             key={image}
-            className={`hero-image slide-${index} ${index === slide ? "active" : ""}`}
+            $active={index === slide}
+            $index={index}
             src={image}
             alt="여행지 풍경"
           />
         ))}
-        <div className="hero-overlay" />
-        <header className={`site-header ${scrolled ? "scrolled" : ""}`}>
-          <a className="brand" href="/">
+        <S.HeroOverlay />
+        <S.Header $scrolled={scrolled}>
+          <S.Brand href="/">
             미스터 월드
-          </a>
-          <nav>
-            <a href="#themes">THEME</a>
-            <a href="/reservation">RESERVATION</a>
-            <a href="/login">LOGIN</a>
-          </nav>
-        </header>
-        <div className="hero-copy">
-          <p className="eyebrow">Travel with a purpose.</p>
-          <h1>떠나는 이유에 맞춘 여행.</h1>
-          <a className="outline-button" href="/reservation">
+          </S.Brand>
+          <S.Nav>
+            <S.NavLink href="#themes">THEME</S.NavLink>
+            <S.NavLink href="/reservation">RESERVATION</S.NavLink>
+            <S.NavLink href="/login">LOGIN</S.NavLink>
+          </S.Nav>
+        </S.Header>
+        <S.HeroCopy>
+          <S.Eyebrow>Travel with a purpose.</S.Eyebrow>
+          <S.HeroTitle>떠나는 이유에 맞춘 여행.</S.HeroTitle>
+          <S.ReservationButton href="/reservation">
             여행 예약하기
-          </a>
-        </div>
-        <div className="slider-dots">
+          </S.ReservationButton>
+        </S.HeroCopy>
+        <S.SliderDots>
           {slides.map((_, index) => (
-            <button
+            <S.Dot
               key={index}
-              className={index === slide ? "selected" : ""}
+              $active={index === slide}
               onClick={() => setSlide(index)}
               aria-label={`${index + 1}번 슬라이드`}
             />
           ))}
-        </div>
-      </section>
-      <section className="info-grid home-info-grid">
-        <div className="info-column">
-          <div className="section-heading">
-            <h2>Notice</h2>
-            <button>더보기 +</button>
-          </div>
+        </S.SliderDots>
+      </S.Hero>
+      <S.InfoGrid>
+        <S.InfoColumn>
+          <S.SectionHeading>
+            <S.SectionTitle>Notice</S.SectionTitle>
+            <S.MoreButton>더보기 +</S.MoreButton>
+          </S.SectionHeading>
           {[
             ["신청 인원 3명 이상 시 출발이 확정됩니다", "2026.09.28"],
             ["예약 취소 위약금 기준 안내", "2026.09.20"],
@@ -80,34 +82,32 @@ export default function HomePage() {
               "2026.09.01",
             ],
           ].map(([title, date]) => (
-            <div className="notice-row" key={title}>
-              <span>
-                <b>[공지]</b> {title}
-              </span>
-              <time>{date}</time>
-            </div>
+            <S.NoticeRow key={title}>
+              <S.NoticeText><S.NoticeLabel>[공지]</S.NoticeLabel> {title}</S.NoticeText>
+              <S.NoticeDate>{date}</S.NoticeDate>
+            </S.NoticeRow>
           ))}
-        </div>
-        <div className="info-column">
-          <div className="section-heading">
-            <h2>Reservation</h2>
-            <button>더보기 +</button>
-          </div>
-          <div className="guest-card">
-            <p>
+        </S.InfoColumn>
+        <S.InfoColumn>
+          <S.SectionHeading>
+            <S.SectionTitle>Reservation</S.SectionTitle>
+            <S.MoreButton>더보기 +</S.MoreButton>
+          </S.SectionHeading>
+          <S.GuestCard>
+            <S.GuestText>
               로그인하면 예약 현황과 이전 여행을 확인하고, 단골 고객 할인을 받을
               수 있어요.
-            </p>
-            <a className="primary" href="/login">
+            </S.GuestText>
+            <S.PrimaryLink href="/login">
               로그인
-            </a>
-          </div>
-        </div>
-      </section>
-      <section id="themes" className="theme-preview">
-        <h2>Choose your journey</h2>
-        <a href="/themes">테마 둘러보기</a>
-      </section>
-    </Layout>
+            </S.PrimaryLink>
+          </S.GuestCard>
+        </S.InfoColumn>
+      </S.InfoGrid>
+      <S.ThemePreview id="themes">
+        <S.ThemeTitle>Choose your journey</S.ThemeTitle>
+        <S.ThemeLink href="/themes">테마 둘러보기</S.ThemeLink>
+      </S.ThemePreview>
+    </S.HomePage>
   );
 }
