@@ -37,8 +37,7 @@ export default function HomePage() {
           <nav>
             <a href="#themes">THEME</a>
             <a href="/reservation">RESERVATION</a>
-            <a href="/mypage">MY PAGE</a>
-            <a href="/login">LOGOUT</a>
+            <a href="/login">LOGIN</a>
           </nav>
         </header>
         <div className="hero-copy">
