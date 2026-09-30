@@ -14,3 +14,6 @@ main{background:#fffdf8}.hero-section{height:100vh;min-height:600px;position:rel
 .screenshot-hero .slide-1,.screenshot-hero .slide-2{object-position:center 80%}
 .screenshot-hero .slide-1,.screenshot-hero .slide-2{object-position:center 70%}
 .screenshot-hero .slide-1,.screenshot-hero .slide-2{object-position:center 60%}
+.home-info-grid .guest-card .primary{display:block;width:100%;box-sizing:border-box;text-align:center;text-decoration:none}
+.screenshot-hero .site-header{transition:background-color .3s ease,box-shadow .3s ease}.screenshot-hero .site-header.scrolled{background:#1d1c1a;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.screenshot-hero .site-header{padding:18px clamp(28px,4.3vw,82px)}
