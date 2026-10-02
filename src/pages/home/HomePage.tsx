@@ -7,6 +7,20 @@ const slides = [
   "/images/lakeside-village.jpg",
   "/images/hot-air-balloons.jpg",
 ];
+const themes = [
+  [
+    "Honeymoon",
+    "둘만의 시작을 위한 로맨틱 스페셜 룸과 2인 전용 차량",
+    "/images/lake-aerial.jpg",
+  ],
+  ["Healing", "부모님을 위한 쉼과 회복의 여행", "/images/lakeside-village.jpg"],
+  [
+    "Golf",
+    "유명 골프 리조트에서 즐기는 라운딩 챌린지",
+    "/images/hot-air-balloons.jpg",
+  ],
+  ["Trekking", "산과 길을 걷는 아웃도어 어드벤처", "/images/lake-aerial.jpg"],
+];
 
 export default function HomePage() {
   const [slide, setSlide] = useState(0);
@@ -40,9 +54,7 @@ export default function HomePage() {
         ))}
         <S.HeroOverlay />
         <S.Header $scrolled={scrolled}>
-          <S.Brand href="/">
-            미스터 월드
-          </S.Brand>
+          <S.Brand href="/">미스터 월드</S.Brand>
           <S.Nav>
             <S.NavLink href="#themes">THEME</S.NavLink>
             <S.NavLink href="/reservation">RESERVATION</S.NavLink>
@@ -83,7 +95,9 @@ export default function HomePage() {
             ],
           ].map(([title, date]) => (
             <S.NoticeRow key={title}>
-              <S.NoticeText><S.NoticeLabel>[공지]</S.NoticeLabel> {title}</S.NoticeText>
+              <S.NoticeText>
+                <S.NoticeLabel>[공지]</S.NoticeLabel> {title}
+              </S.NoticeText>
               <S.NoticeDate>{date}</S.NoticeDate>
             </S.NoticeRow>
           ))}
@@ -98,16 +112,22 @@ export default function HomePage() {
               로그인하면 예약 현황과 이전 여행을 확인하고, 단골 고객 할인을 받을
               수 있어요.
             </S.GuestText>
-            <S.PrimaryLink href="/login">
-              로그인
-            </S.PrimaryLink>
+            <S.PrimaryLink href="/login">로그인</S.PrimaryLink>
           </S.GuestCard>
         </S.InfoColumn>
       </S.InfoGrid>
-      <S.ThemePreview id="themes">
-        <S.ThemeTitle>Choose your journey</S.ThemeTitle>
-        <S.ThemeLink href="/themes">테마 둘러보기</S.ThemeLink>
-      </S.ThemePreview>
+      <S.ThemeStack>
+        {themes.map(([title, description, image]) => (
+          <S.ThemeCard key={title} $image={image}>
+            <S.ThemeShade />
+            <S.ThemeContent>
+              <S.ThemeCardTitle>{title}</S.ThemeCardTitle>
+              <S.ThemeDescription>{description}</S.ThemeDescription>
+              <S.ThemeMore href="/reservation">more</S.ThemeMore>
+            </S.ThemeContent>
+          </S.ThemeCard>
+        ))}
+      </S.ThemeStack>
     </S.HomePage>
   );
 }

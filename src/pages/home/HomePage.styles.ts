@@ -153,7 +153,7 @@ export const PrimaryLink = styled.a`
   padding: 16px;
 `;
 export const ThemePreview = styled.section`
-  padding: 100px 24px;
+  padding: 1px 50px 30px;
   text-align: center;
   background: #fffdf8;
   h2 {
@@ -215,6 +215,57 @@ export const ThemeTitle = styled.h2`
 `;
 export const ThemeLink = styled.a`
   color: #1d1c1a;
+`;
+export const ThemeStack = styled.section``;
+export const ThemeCard = styled.article<{ $image: string }>`
+  position: relative;
+  min-height: 520px;
+  overflow: hidden;
+  color: #fffdf8;
+  background: url(${({ $image }) => $image}) center / cover no-repeat;
+`;
+export const ThemeShade = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 18, 15, 0.38);
+`;
+export const ThemeContent = styled.div`
+  position: relative;
+  z-index: 1;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+`;
+export const ThemeCardTitle = styled.h2`
+  margin: 0;
+  font:
+    500 clamp(52px, 7vw, 96px) "Cormorant Garamond",
+    serif;
+`;
+export const ThemeDescription = styled.p`
+  margin: 10px 0 22px;
+  font-size: 16px;
+  font-weight: 500;
+`;
+export const ThemeMore = styled.a`
+  padding: 11px 31px;
+  border: 1px solid #fffdf8;
+  color: #fffdf8;
+  text-decoration: none;
+  font:
+    600 17px "Cormorant Garamond",
+    serif;
+  letter-spacing: 0.14em;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+  &:hover {
+    background: #fffdf8;
+    color: #1d1c1a;
+  }
 `;
 
 export const HeroCopy = styled.div`
