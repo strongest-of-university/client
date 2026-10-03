@@ -51,6 +51,17 @@ export const Main = styled.main`
   padding: clamp(56px, 6vw, 108px) 0 56px;
 `;
 
+export const ReservationNotice = styled.p`
+  margin: 0 0 28px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #efe9dd;
+  color: #1d1c1a;
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: keep-all;
+`;
+
 export const Title = styled.h1`
   margin: 0 0 26px;
   font: 700 30px "Noto Serif KR", serif;

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import * as S from "./LoginPage.styles";
 
-export default function LoginPage() {
+export default function LoginPage({ reservationRequired = false }: { reservationRequired?: boolean }) {
   const [message, setMessage] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -15,11 +15,16 @@ export default function LoginPage() {
         <S.Brand href="/">미스터 월드</S.Brand>
         <S.Nav aria-label="주 메뉴">
           <S.NavLink href="/#themes">THEME</S.NavLink>
-          <S.NavLink href="/reservation">RESERVATION</S.NavLink>
-          <S.NavLink href="/login" aria-current="page">LOGIN</S.NavLink>
+          <S.NavLink href="/reservation" aria-current={reservationRequired ? "page" : undefined}>RESERVATION</S.NavLink>
+          <S.NavLink href="/login" aria-current={reservationRequired ? undefined : "page"}>LOGIN</S.NavLink>
         </S.Nav>
       </S.Header>
       <S.Main>
+        {reservationRequired && (
+          <S.ReservationNotice>
+            예약은 로그인 후 진행할 수 있어요. 로그인하면 바로 이어서 진행돼요.
+          </S.ReservationNotice>
+        )}
         <S.Title>로그인</S.Title>
         <S.Form onSubmit={handleSubmit} onChange={() => setMessage("")}>
           <S.Field>

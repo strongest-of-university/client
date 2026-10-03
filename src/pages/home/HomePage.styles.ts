@@ -101,7 +101,9 @@ export const InfoGrid = styled.section`
   grid-template-columns: 1fr 1fr;
   gap: clamp(36px, 6vw, 80px);
 `;
-export const InfoColumn = styled.div``;
+export const InfoColumn = styled.div`
+  scroll-margin-top: 96px;
+`;
 export const SectionHeading = styled.div`
   display: flex;
   justify-content: space-between;
@@ -196,7 +198,13 @@ export const MoreButton = styled.a`
   font-size: 12px;
   line-height: 1.5;
 `;
-export const NoticeText = styled.span``;
+export const NoticeText = styled.a`
+  color: inherit;
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; text-underline-offset: 3px; }
+  &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+`;
 export const NoticeLabel = styled.b``;
 export const NoticeDate = styled.time`
   color: #6b665d;

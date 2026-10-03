@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
+import { notices } from "../notices/notices";
+import SiteFooter from "../../components/SiteFooter";
 
 const slides = [
   "/images/lake-aerial.jpg",
@@ -114,21 +116,13 @@ export default function HomePage() {
         </S.SliderDots>
       </S.Hero>
       <S.InfoGrid>
-        <S.InfoColumn>
+        <S.InfoColumn id="notices">
           <S.SectionHeading>
             <S.SectionTitle>Notice</S.SectionTitle>
           </S.SectionHeading>
-          {[
-            ["신청 인원 3명 이상 시 출발이 확정됩니다", "2026.09.28"],
-            ["예약 취소 위약금 기준 안내", "2026.09.20"],
-            ["음성 예약 서비스를 시작합니다", "2026.09.12"],
-            [
-              "허니문·효도 테마는 그랜드 등급부터 선택 가능합니다",
-              "2026.09.01",
-            ],
-          ].map(([title, date]) => (
-            <S.NoticeRow key={title}>
-              <S.NoticeText>
+          {notices.map(({ id, title, date }) => (
+            <S.NoticeRow key={id}>
+              <S.NoticeText href={`/notices/${id}`}>
                 <S.NoticeLabel>[공지]</S.NoticeLabel> {title}
               </S.NoticeText>
               <S.NoticeDate>{date}</S.NoticeDate>
@@ -172,14 +166,7 @@ export default function HomePage() {
           </S.ThemeCard>
         ))}
       </S.ThemeStack>
-      <S.Footer>
-        <S.FooterBrand>미스터 월드</S.FooterBrand>
-        <S.FooterText>
-          소프트웨어공학 프로젝트 · 과제팀 최강 · 김정묵 · 장은석 · 박종혁 · 지도교수 이병정
-        </S.FooterText>
-        <S.FooterText>문의 시간 09:00 ~ 21:00</S.FooterText>
-        <S.Copyright>Copyright © 2026 Mr. World. All rights reserved.</S.Copyright>
-      </S.Footer>
+      <SiteFooter />
     </S.HomePage>
   );
 }
