@@ -116,7 +116,7 @@ export default function HomePage() {
           </S.GuestCard>
         </S.InfoColumn>
       </S.InfoGrid>
-      <S.ThemeStack>
+      <S.ThemeStack id="themes">
         <S.ThemeTitle>여행에도 취향이 있으니까</S.ThemeTitle>
         {themes.map(([title, description, image]) => (
           <S.ThemeCard key={title} $image={image}>
