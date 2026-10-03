@@ -237,6 +237,7 @@ export const ThemeLink = styled.a`
 export const ThemeStack = styled.section``;
 export const ThemeCard = styled.article<{ $image: string }>`
   position: relative;
+  scroll-margin-top: 88px;
   min-height: 520px;
   overflow: hidden;
   color: #fffdf8;
@@ -284,6 +285,32 @@ export const ThemeMore = styled.a`
     background: #fffdf8;
     color: #1d1c1a;
   }
+`;
+
+export const Footer = styled.footer`
+  padding: 48px clamp(28px, 4.3vw, 82px);
+  background: #1d1c1a;
+  color: #c7c0b4;
+`;
+
+export const FooterBrand = styled.h2`
+  margin: 0 0 16px;
+  color: #fffdf8;
+  font: 700 20px "Noto Serif KR", serif;
+`;
+
+export const FooterText = styled.p`
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: keep-all;
+`;
+
+export const Copyright = styled.p`
+  margin: 0;
+  color: #aaa293;
+  font-size: 13px;
+  line-height: 1.5;
 `;
 
 export const HeroCopy = styled.div`

@@ -83,7 +83,6 @@ export default function HomePage() {
         <S.InfoColumn>
           <S.SectionHeading>
             <S.SectionTitle>Notice</S.SectionTitle>
-            <S.MoreButton>더보기 +</S.MoreButton>
           </S.SectionHeading>
           {[
             ["신청 인원 3명 이상 시 출발이 확정됩니다", "2026.09.28"],
@@ -119,16 +118,26 @@ export default function HomePage() {
       <S.ThemeStack id="themes">
         <S.ThemeTitle>여행에도 취향이 있으니까</S.ThemeTitle>
         {themes.map(([title, description, image]) => (
-          <S.ThemeCard key={title} $image={image}>
+          <S.ThemeCard key={title} id={`theme-${title.toLowerCase()}`} $image={image}>
             <S.ThemeShade />
             <S.ThemeContent>
               <S.ThemeCardTitle>{title}</S.ThemeCardTitle>
               <S.ThemeDescription>{description}</S.ThemeDescription>
-              <S.ThemeMore href="/reservation">more</S.ThemeMore>
+              <S.ThemeMore href={`/themes/${title.toLowerCase()}`}>
+                more
+              </S.ThemeMore>
             </S.ThemeContent>
           </S.ThemeCard>
         ))}
       </S.ThemeStack>
+      <S.Footer>
+        <S.FooterBrand>미스터 월드</S.FooterBrand>
+        <S.FooterText>
+          소프트웨어공학 프로젝트 · 과제팀 최강 · 김정묵 · 장은석 · 박종혁 · 지도교수 이병정
+        </S.FooterText>
+        <S.FooterText>문의 시간 09:00 ~ 21:00</S.FooterText>
+        <S.Copyright>Copyright © 2026 Mr. World. All rights reserved.</S.Copyright>
+      </S.Footer>
     </S.HomePage>
   );
 }
