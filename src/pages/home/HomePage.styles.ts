@@ -114,11 +114,6 @@ export const SectionHeading = styled.div`
       serif;
     margin: 0;
   }
-  button {
-    background: none;
-    border: 1px solid #1d1c1a;
-    padding: 4px 10px;
-  }
 `;
 export const NoticeRow = styled.div`
   display: flex;
@@ -192,10 +187,14 @@ export const SectionTitle = styled.h2`
     serif;
   margin: 0;
 `;
-export const MoreButton = styled.button`
+export const MoreButton = styled.a`
   background: none;
+  color: inherit;
+  text-decoration: none;
   border: 1px solid #1d1c1a;
-  padding: 4px 10px;
+  padding: 3px 8px;
+  font-size: 12px;
+  line-height: 1.5;
 `;
 export const NoticeText = styled.span``;
 export const NoticeLabel = styled.b``;
@@ -230,11 +229,24 @@ export const ThemeTitle = styled.h2`
     height: 1px;
     background: #d6cbbb;
   }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &[data-reveal="pending"] {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+  }
 `;
 export const ThemeLink = styled.a`
   color: #1d1c1a;
 `;
-export const ThemeStack = styled.section``;
+export const ThemeStack = styled.section`
+  scroll-margin-top: 96px;
+`;
 export const ThemeCard = styled.article<{ $image: string }>`
   position: relative;
   scroll-margin-top: 88px;
@@ -242,6 +254,18 @@ export const ThemeCard = styled.article<{ $image: string }>`
   overflow: hidden;
   color: #fffdf8;
   background: url(${({ $image }) => $image}) center / cover no-repeat;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &[data-reveal="pending"]:not(:focus-within) {
+      opacity: 0;
+      transform: translateY(48px);
+      pointer-events: none;
+    }
+  }
 `;
 export const ThemeShade = styled.div`
   position: absolute;
@@ -257,6 +281,23 @@ export const ThemeContent = styled.div`
   align-items: center;
   justify-content: center;
   text-align: center;
+
+  @media (prefers-reduced-motion: no-preference) {
+    > * {
+      transition:
+        opacity 0.45s ease,
+        transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    > :nth-child(1) { transition-delay: 0.06s; }
+    > :nth-child(2) { transition-delay: 0.12s; }
+    > :nth-child(3) { transition-delay: 0.18s; }
+
+    [data-reveal="pending"]:not(:focus-within) & > * {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+  }
 `;
 export const ThemeCardTitle = styled.h2`
   margin: 0;

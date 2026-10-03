@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
 
 const slides = [
@@ -25,6 +25,7 @@ const themes = [
 export default function HomePage() {
   const [slide, setSlide] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -38,6 +39,39 @@ export default function HomePage() {
     const onScroll = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const stack = themeStackRef.current;
+    if (
+      !stack ||
+      !("IntersectionObserver" in window) ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const revealElements = stack.querySelectorAll<HTMLElement>("[data-theme-reveal]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          (entry.target as HTMLElement).dataset.reveal = "visible";
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -32px 0px" },
+    );
+
+    revealElements.forEach((element) => {
+      element.dataset.reveal = "pending";
+      observer.observe(element);
+    });
+
+    return () => {
+      observer.disconnect();
+      revealElements.forEach((element) => delete element.dataset.reveal);
+    };
   }, []);
 
   return (
@@ -104,7 +138,7 @@ export default function HomePage() {
         <S.InfoColumn>
           <S.SectionHeading>
             <S.SectionTitle>Reservation</S.SectionTitle>
-            <S.MoreButton>더보기 +</S.MoreButton>
+            <S.MoreButton href="/login">더보기 +</S.MoreButton>
           </S.SectionHeading>
           <S.GuestCard>
             <S.GuestText>
@@ -115,10 +149,18 @@ export default function HomePage() {
           </S.GuestCard>
         </S.InfoColumn>
       </S.InfoGrid>
-      <S.ThemeStack id="themes">
-        <S.ThemeTitle>여행에도 취향이 있으니까</S.ThemeTitle>
+      <S.ThemeStack id="themes" ref={themeStackRef}>
+        <S.ThemeTitle data-theme-reveal>여행에도 취향이 있으니까</S.ThemeTitle>
         {themes.map(([title, description, image]) => (
-          <S.ThemeCard key={title} id={`theme-${title.toLowerCase()}`} $image={image}>
+          <S.ThemeCard
+            key={title}
+            id={`theme-${title.toLowerCase()}`}
+            $image={image}
+            data-theme-reveal
+            onFocusCapture={(event) => {
+              event.currentTarget.dataset.reveal = "visible";
+            }}
+          >
             <S.ThemeShade />
             <S.ThemeContent>
               <S.ThemeCardTitle>{title}</S.ThemeCardTitle>
