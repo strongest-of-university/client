@@ -209,9 +209,27 @@ export const GuestText = styled.p`
   font-size: 15px;
 `;
 export const ThemeTitle = styled.h2`
+  margin: 0;
+  padding: 0 24px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 24px);
+  text-align: center;
   font:
-    600 36px "Cormorant Garamond",
+    600 clamp(20px, 2.4vw, 28px) "Noto Serif KR",
     serif;
+  letter-spacing: -0.04em;
+  line-height: 1.5;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 0 1 64px;
+    min-width: 16px;
+    height: 1px;
+    background: #d6cbbb;
+  }
 `;
 export const ThemeLink = styled.a`
   color: #1d1c1a;

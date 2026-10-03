@@ -11,15 +11,15 @@ const themes = [
   [
     "Honeymoon",
     "둘만의 시작을 위한 로맨틱 스페셜 룸과 2인 전용 차량",
-    "/images/lake-aerial.jpg",
+    "/images/honeymoon.jpg",
   ],
-  ["Healing", "부모님을 위한 쉼과 회복의 여행", "/images/lakeside-village.jpg"],
+  ["Healing", "부모님을 위한 쉼과 회복의 여행", "/images/healing.jpg"],
   [
     "Golf",
     "유명 골프 리조트에서 즐기는 라운딩 챌린지",
-    "/images/hot-air-balloons.jpg",
+    "/images/golf.jpg",
   ],
-  ["Trekking", "산과 길을 걷는 아웃도어 어드벤처", "/images/lake-aerial.jpg"],
+  ["Trekking", "산과 길을 걷는 아웃도어 어드벤처", "/images/trekking.jpg"],
 ];
 
 export default function HomePage() {
@@ -117,6 +117,7 @@ export default function HomePage() {
         </S.InfoColumn>
       </S.InfoGrid>
       <S.ThemeStack>
+        <S.ThemeTitle>여행에도 취향이 있으니까</S.ThemeTitle>
         {themes.map(([title, description, image]) => (
           <S.ThemeCard key={title} $image={image}>
             <S.ThemeShade />
