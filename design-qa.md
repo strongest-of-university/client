@@ -1,3 +1,20 @@
+# Signup page verification
+
+- Source: two user-provided signup screenshots in this conversation.
+- Implementation: http://127.0.0.1:5173/signup
+- States: empty form (disabled submit), mismatched passwords, matching passwords, incomplete/invalid phone, complete valid form.
+- Uses existing login typography, cream inputs including autofill, 400px responsive form, and header. Actual account creation is not connected; no credentials are persisted.
+- The reference encryption claim is omitted because no storage backend exists. Contact-use helper text is retained.
+- Initial implementation passed build, lint, and six Node validation tests. Validation now lives directly inside SignupPage.tsx at the user's request; the standalone validator and its module-level test file were removed. The existing comparison and required-field checks are unchanged.
+- Implementation screenshot, viewport/density normalization, full/focused comparisons, and browser interaction checks remain blocked by unavailable browser capture.
+- Fidelity surfaces pending rendered verification: typography, layout/spacing, colors, copy; no new image assets required.
+- Checklist: compare desktop/mobile with the reference; test input, autofill, feedback announcements, disabled/enabled states, and login/signup navigation in a browser.
+- Comparison history: no rendered comparison; no visual pass claimed.
+
+final result: blocked
+
+---
+
 # Trekking detail page verification
 
 - Source: three user-provided Trekking screenshots (hero, overview/departures, styles/other themes).

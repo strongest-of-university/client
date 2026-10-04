@@ -1,11 +1,15 @@
 import Home from './pages/home/HomePage'
 import LoginPage from './pages/login/LoginPage'
+import SignupPage from './pages/signup/SignupPage'
 import NoticePage from './pages/notices/NoticePage'
 import ThemeDetailPage from './pages/themes/ThemeDetailPage'
 import { golfTheme, healingTheme, honeymoonTheme, trekkingTheme } from './pages/themes/themeDetails'
 
 /** Central route entrypoint. Add new top-level routes here as the app grows. */
 export default function Router() {
+  if (window.location.pathname.replace(/\/+$/, '') === '/signup') {
+    return <SignupPage />
+  }
   const noticeMatch = window.location.pathname.match(/^\/notices\/([^/]+)\/?$/)
   if (noticeMatch) {
     return <NoticePage noticeId={noticeMatch[1]} />

@@ -39,7 +39,7 @@ export default function LoginPage({ reservationRequired = false }: { reservation
         </S.Form>
         <S.SignupPrompt>
           아직 회원이 아니신가요?
-          <S.SignupButton type="button" onClick={() => setMessage("회원가입 기능은 준비 중입니다.")}>
+          <S.SignupButton href="/signup">
             회원가입
           </S.SignupButton>
         </S.SignupPrompt>

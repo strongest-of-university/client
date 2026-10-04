@@ -145,7 +145,7 @@ export const SignupPrompt = styled.p`
   font-size: 14px;
 `;
 
-export const SignupButton = styled.button`
+export const SignupButton = styled.a`
   padding: 0;
   border: 0;
   background: none;
