@@ -1,9 +1,17 @@
 import styled from "styled-components";
-import { Page as BasePage } from "../themes/ThemeDetailPage.styles";
 
-export const Page = styled(BasePage)`
+export const Page = styled.div`
+  min-height: 100vh;
+  background: #fff;
+  color: #1d1c1a;
   display: flex;
   flex-direction: column;
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 3px solid #b69b68;
+    outline-offset: 5px;
+  }
 `;
 
 export const Main = styled.main`

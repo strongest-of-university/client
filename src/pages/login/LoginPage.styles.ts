@@ -6,60 +6,10 @@ export const Page = styled.div`
   color: #1d1c1a;
 `;
 
-export const Header = styled.header`
-  min-height: 80px;
-  padding: 20px clamp(24px, 2.8vw, 44px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  background: #000;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 16px;
-    padding: 20px;
-  }
-`;
-
-export const Brand = styled.a`
-  color: #fffdf8;
-  text-decoration: none;
-  font: 700 24px "Noto Serif KR", serif;
-  white-space: nowrap;
-`;
-
-export const Nav = styled.nav`
-  display: flex;
-  align-items: center;
-  gap: clamp(20px, 2.5vw, 44px);
-`;
-
-export const NavLink = styled.a`
-  color: #fffdf8;
-  text-decoration: none;
-  font: 600 clamp(14px, 1.1vw, 17px) "Cormorant Garamond", serif;
-  letter-spacing: 0.14em;
-
-  &:hover { text-decoration: underline; text-underline-offset: 6px; }
-  &:focus-visible { outline: 2px solid #fffdf8; outline-offset: 6px; }
-`;
-
 export const Main = styled.main`
   width: min(400px, calc(100% - 48px));
   margin: 0 auto;
   padding: clamp(56px, 6vw, 108px) 0 56px;
-`;
-
-export const ReservationNotice = styled.p`
-  margin: 0 0 28px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: #efe9dd;
-  color: #1d1c1a;
-  font-size: 14px;
-  line-height: 1.7;
-  word-break: keep-all;
 `;
 
 export const Title = styled.h1`
@@ -134,6 +84,27 @@ export const SubmitButton = styled.button`
   &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
 `;
 
+export const Message = styled.p`
+  margin: 20px 0 0;
+  color: #6b665d;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+
+  &:empty { display: none; }
+`;
+
+export const ReservationNotice = styled.p`
+  margin: 0 0 28px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #efe9dd;
+  color: #1d1c1a;
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: keep-all;
+`;
+
 export const SignupPrompt = styled.p`
   margin: 20px 0 0;
   display: flex;
@@ -155,14 +126,4 @@ export const SignupButton = styled.a`
   text-underline-offset: 2px;
 
   &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
-`;
-
-export const Message = styled.p`
-  margin: 20px 0 0;
-  color: #6b665d;
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: center;
-
-  &:empty { display: none; }
 `;

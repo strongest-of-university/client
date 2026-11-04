@@ -1,7 +1,7 @@
-import * as Layout from "../themes/ThemeDetailPage.styles";
+import Header from "../../components/Header";
 import * as S from "./NoticePage.styles";
 import { notices } from "./notices";
-import SiteFooter from "../../components/SiteFooter";
+import Footer from "../../components/Footer";
 
 export default function NoticePage({ noticeId }: { noticeId: string }) {
   const noticeIndex = notices.findIndex((item) => item.id === noticeId);
@@ -11,14 +11,7 @@ export default function NoticePage({ noticeId }: { noticeId: string }) {
 
   return (
     <S.Page>
-      <Layout.Header>
-        <Layout.Brand href="/">미스터 월드</Layout.Brand>
-        <Layout.Nav aria-label="주 메뉴">
-          <Layout.NavLink href="/#themes">THEME</Layout.NavLink>
-          <Layout.NavLink href="/reservation">RESERVATION</Layout.NavLink>
-          <Layout.NavLink href="/login">LOGIN</Layout.NavLink>
-        </Layout.Nav>
-      </Layout.Header>
+      <Header />
       <S.Main>
         <S.Eyebrow>Notice</S.Eyebrow>
         <article>
@@ -59,7 +52,7 @@ export default function NoticePage({ noticeId }: { noticeId: string }) {
           </S.ArticleNavigation>
         )}
       </S.Main>
-      <SiteFooter />
+      <Footer />
     </S.Page>
   );
 }

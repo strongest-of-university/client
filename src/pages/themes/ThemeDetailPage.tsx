@@ -1,3 +1,4 @@
+import Header from "../../components/Header";
 import { useState } from "react";
 import * as S from "./ThemeDetailPage.styles";
 import { themeLinks, type ThemeDetail } from "./themeDetails";
@@ -9,14 +10,7 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
 
   return (
     <S.Page>
-      <S.Header>
-        <S.Brand href="/">미스터 월드</S.Brand>
-        <S.Nav aria-label="주 메뉴">
-          <S.NavLink href="/#themes">THEME</S.NavLink>
-          <S.NavLink href="/reservation">RESERVATION</S.NavLink>
-          <S.NavLink href="/login">LOGIN</S.NavLink>
-        </S.Nav>
-      </S.Header>
+      <Header />
       <main>
         <S.Hero
           aria-labelledby="theme-title"

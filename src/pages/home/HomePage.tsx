@@ -1,7 +1,8 @@
+import Header from "../../components/Header";
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
 import { notices } from "../notices/notices";
-import SiteFooter from "../../components/SiteFooter";
+import Footer from "../../components/Footer";
 
 const slides = [
   "/images/lake-aerial.jpg",
@@ -26,7 +27,6 @@ const themes = [
 
 export default function HomePage() {
   const [slide, setSlide] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
   const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -35,12 +35,6 @@ export default function HomePage() {
       5000,
     );
     return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -89,14 +83,7 @@ export default function HomePage() {
           />
         ))}
         <S.HeroOverlay />
-        <S.Header $scrolled={scrolled}>
-          <S.Brand href="/">미스터 월드</S.Brand>
-          <S.Nav>
-            <S.NavLink href="#themes">THEME</S.NavLink>
-            <S.NavLink href="/reservation">RESERVATION</S.NavLink>
-            <S.NavLink href="/login">LOGIN</S.NavLink>
-          </S.Nav>
-        </S.Header>
+        <Header variant="home" />
         <S.HeroCopy>
           <S.Eyebrow>Travel with a purpose.</S.Eyebrow>
           <S.HeroTitle>떠나는 이유에 맞춘 여행.</S.HeroTitle>
@@ -166,7 +153,7 @@ export default function HomePage() {
           </S.ThemeCard>
         ))}
       </S.ThemeStack>
-      <SiteFooter />
+      <Footer />
     </S.HomePage>
   );
 }

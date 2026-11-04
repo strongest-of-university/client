@@ -1,7 +1,73 @@
 import styled from "styled-components";
-import { Input as AuthInput, SubmitButton as AuthSubmitButton } from "../login/LoginPage.styles";
 
-export const Input = styled(AuthInput)`
+export const Page = styled.div`
+  min-height: 100vh;
+  background: #fff;
+  color: #1d1c1a;
+`;
+
+export const Main = styled.main`
+  width: min(400px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: clamp(56px, 6vw, 108px) 0 56px;
+`;
+
+export const Title = styled.h1`
+  margin: 0 0 26px;
+  font: 700 30px "Noto Serif KR", serif;
+  line-height: 1.5;
+  letter-spacing: -0.04em;
+`;
+
+export const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
+export const Field = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+export const Label = styled.label`
+  color: #6b665d;
+  font-size: 14px;
+`;
+
+export const Input = styled.input`
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1px solid #dfd4c4;
+  border-radius: 11px;
+  background: #fffdf9;
+  color: #1d1c1a;
+  font: inherit;
+  font-size: 16px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:focus-visible {
+    outline: none;
+    border-color: #88745a;
+    box-shadow: 0 0 0 3px rgba(136, 116, 90, 0.15);
+  }
+
+  &:autofill,
+  &:-webkit-autofill {
+    -webkit-text-fill-color: #1d1c1a;
+    caret-color: #1d1c1a;
+    box-shadow: inset 0 0 0 1000px #fffdf9;
+  }
+
+  &:autofill:focus-visible,
+  &:-webkit-autofill:focus-visible {
+    box-shadow:
+      inset 0 0 0 1000px #fffdf9,
+      0 0 0 3px rgba(136, 116, 90, 0.15);
+  }
+
   &[aria-invalid="true"] { border-color: #b43d16; }
 `;
 
@@ -22,10 +88,33 @@ export const HelpText = styled.p`
   word-break: keep-all;
 `;
 
-export const SubmitButton = styled(AuthSubmitButton)`
+export const SubmitButton = styled.button`
+  min-height: 54px;
+  margin-top: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: #1d1c1a;
+  color: #fffdf8;
+  font-size: 16px;
+  font-weight: 700;
+  transition: background-color 0.2s ease;
+
+  &:hover { background: #39352f; }
+  &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+
   &:disabled {
     background: #d9d9d9;
     color: #777;
     cursor: not-allowed;
   }
+`;
+
+export const Message = styled.p`
+  margin: 20px 0 0;
+  color: #6b665d;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+
+  &:empty { display: none; }
 `;

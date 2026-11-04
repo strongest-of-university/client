@@ -33,45 +33,6 @@ export const HeroOverlay = styled.div`
   background: rgba(18, 25, 31, 0.28);
 `;
 
-export const Header = styled.header<{ $scrolled: boolean }>`
-  position: fixed;
-  z-index: 5;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px clamp(28px, 4.3vw, 82px);
-  background: ${({ $scrolled }) => ($scrolled ? "#1d1c1a" : "transparent")};
-  box-shadow: ${({ $scrolled }) =>
-    $scrolled ? "0 4px 18px rgba(0,0,0,.18)" : "none"};
-  transition:
-    background-color 0.3s ease,
-    box-shadow 0.3s ease;
-`;
-
-export const Brand = styled.a`
-  color: #fffdf8;
-  text-decoration: none;
-  font:
-    700 22px "Noto Serif KR",
-    serif;
-`;
-
-export const Nav = styled.nav`
-  display: flex;
-  gap: clamp(12px, 2vw, 28px);
-  a {
-    color: #fffdf8;
-    text-decoration: none;
-    font:
-      500 15px "Cormorant Garamond",
-      serif;
-    letter-spacing: 0.12em;
-  }
-`;
-
 export const SliderDots = styled.div`
   position: absolute;
   bottom: 35px;
@@ -161,14 +122,6 @@ export const ThemePreview = styled.section`
   a {
     color: #1d1c1a;
   }
-`;
-export const NavLink = styled.a`
-  color: #fffdf8;
-  text-decoration: none;
-  font:
-    500 15px "Cormorant Garamond",
-    serif;
-  letter-spacing: 0.12em;
 `;
 export const Eyebrow = styled.p`
   font:
@@ -334,32 +287,6 @@ export const ThemeMore = styled.a`
     background: #fffdf8;
     color: #1d1c1a;
   }
-`;
-
-export const Footer = styled.footer`
-  padding: 48px clamp(28px, 4.3vw, 82px);
-  background: #1d1c1a;
-  color: #c7c0b4;
-`;
-
-export const FooterBrand = styled.h2`
-  margin: 0 0 16px;
-  color: #fffdf8;
-  font: 700 20px "Noto Serif KR", serif;
-`;
-
-export const FooterText = styled.p`
-  margin: 0 0 10px;
-  font-size: 13px;
-  line-height: 1.5;
-  word-break: keep-all;
-`;
-
-export const Copyright = styled.p`
-  margin: 0;
-  color: #aaa293;
-  font-size: 13px;
-  line-height: 1.5;
 `;
 
 export const HeroCopy = styled.div`

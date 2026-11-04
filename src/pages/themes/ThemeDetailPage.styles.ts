@@ -12,45 +12,6 @@ export const Page = styled.div`
   }
 `;
 
-export const Header = styled.header`
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  padding: 18px clamp(28px, 4.3vw, 82px);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  background: #1d1c1a;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 12px;
-  }
-`;
-
-export const Brand = styled.a`
-  color: #fffdf8;
-  font: 700 22px "Noto Serif KR", serif;
-  text-decoration: none;
-  white-space: nowrap;
-`;
-
-export const Nav = styled.nav`
-  display: flex;
-  gap: clamp(12px, 2vw, 28px);
-  align-items: center;
-`;
-
-export const NavLink = styled.a`
-  color: #fffdf8;
-  font: 500 15px "Cormorant Garamond", serif;
-  letter-spacing: 0.12em;
-  text-decoration: none;
-
-  &:hover { text-decoration: underline; text-underline-offset: 6px; }
-`;
-
 export const Hero = styled.section<{
   $image: string;
   $position: string;
