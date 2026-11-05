@@ -62,3 +62,10 @@ export const NavLink = styled.a<VariantProps>`
     &:focus-visible { outline: 2px solid #fffdf8; outline-offset: 6px; }
   `}
 `;
+
+export const NavButton = styled(NavLink).attrs({ as: "button" })`
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+`;

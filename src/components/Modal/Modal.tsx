@@ -7,9 +7,18 @@ export type ModalProps = {
   title: string;
   children: ReactNode;
   onClose: () => void;
+  size?: "default" | "large";
+  tone?: "default" | "warm";
 };
 
-export default function Modal({ open, title, children, onClose }: ModalProps) {
+export default function Modal({
+  open,
+  title,
+  children,
+  onClose,
+  size = "default",
+  tone = "default",
+}: ModalProps) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -33,19 +42,24 @@ export default function Modal({ open, title, children, onClose }: ModalProps) {
     };
   }, [open, onClose]);
 
-  if (!open) return null;
-
   return createPortal(
-    <S.Backdrop onMouseDown={onClose}>
+    <S.Backdrop
+      $open={open}
+      aria-hidden={!open}
+      onMouseDown={open ? onClose : undefined}
+    >
       <S.Dialog
+        $size={size}
+        $tone={tone}
+        $open={open}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <S.Header>
-          <S.Title id={titleId}>{title}</S.Title>
-          <S.CloseButton ref={closeButtonRef} type="button" onClick={onClose} aria-label="모달 닫기">
+          <S.Title id={titleId} $size={size}>{title}</S.Title>
+          <S.CloseButton $tone={tone} ref={closeButtonRef} type="button" onClick={onClose} aria-label="모달 닫기">
             ×
           </S.CloseButton>
         </S.Header>

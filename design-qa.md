@@ -1,3 +1,66 @@
+# Logged-in home reservation verification
+
+- Source visual truth: user-provided Reservation screenshot in this conversation.
+- Source pixels: 757 × 392.
+- Implementation route and state: `/` with `sessionStorage.isLoggedIn` set to `true` after submitting `/login`.
+- Implementation screenshot path: unavailable because Computer Use reported no available browser and its native pipe was unavailable.
+- Viewport, CSS size, density normalization, browser console evidence, and focused-region capture: unavailable.
+
+## Findings
+
+- Full-view and focused-region comparisons are blocked by unavailable browser capture, so no visual-fidelity pass is claimed.
+- Fonts and typography: Reservation retains the existing Cormorant heading; Korean reservation titles, metadata, and status labels follow the reference hierarchy. Rendered wrapping remains unverified.
+- Spacing and layout rhythm: two horizontal reservation rows, right-aligned status pills, divider lines, and the compact more button reproduce the supplied structure; responsive alignment remains unverified.
+- Colors and visual tokens: warm page background, near-black confirmed badge, outlined recruiting badge, beige dividers, and muted metadata use the existing home palette.
+- Image quality and assets: the supplied Reservation area contains no raster image assets or standalone icons.
+- Copy and content: both supplied reservations, dates, styles, party size, prices, and statuses are present.
+- Interaction implemented: login stores the tab-scoped session state and returns home; Header changes LOGIN to LOGOUT; RESERVATION targets the home section; logout clears the session and returns to the guest home state.
+- Build and ESLint passed. These checks do not replace browser interaction or visual verification.
+
+## Implementation checklist
+
+- Capture the logged-in Reservation section at the source width and compare row heights, text wrapping, badge placement, and divider spacing.
+- Test login redirect, modal display, Reservation anchor, logout, guest-state restoration, and a narrow mobile viewport.
+- Check browser console errors and keyboard focus styling for LOGOUT and Reservation controls.
+
+Comparison history: no rendered comparison was possible; there are no post-fix browser captures.
+
+final result: blocked
+
+---
+
+# Login travel-history modal verification
+
+- Source visual truth: two user-provided travel-history modal screenshots in this conversation.
+- Source pixels: 648 × 701 and 648 × 542; the second screenshot continues the vertically scrolled state.
+- Implementation route: `/login`, after submitting the required ID and password fields.
+- Implementation screenshot path: unavailable because Computer Use reported no available browser and its native pipe was unavailable.
+- Viewport, CSS size, density normalization, and browser console evidence: unavailable.
+- State: login form submitted; modal open with recent trips ordered by year and date.
+
+## Findings
+
+- Rendered full-view and focused-region comparisons are blocked by unavailable browser capture, so no visual-fidelity pass is claimed.
+- Fonts and typography: the modal uses the existing Noto Serif KR/Noto Sans KR stack with a 30px responsive greeting and compact trip metadata; rendered weight and wrapping remain unverified.
+- Spacing and layout rhythm: the implementation uses a 640px modal, vertically scrollable history, year groups, timeline markers, bordered cards, and a full-width CTA based on the reference; responsive overflow remains unverified.
+- Colors and visual tokens: warm ivory surface, near-black text/CTA, beige borders, and muted metadata follow the supplied reference; rendered color comparison remains unverified.
+- Image quality and assets: the reference contains no raster imagery. The close and CTA arrow are text controls in the supplied UI; no generated image assets are required.
+- Copy and content: greeting, recent-order label, three visible sample journeys, dates, grades, prices, and CTA match the supplied screenshots.
+- Interaction implemented: login submit opens the modal; backdrop, close control, and Escape close it; focus returns to the prior control; background scrolling is locked while open.
+- Build and ESLint passed. These checks do not replace browser visual or interaction verification.
+
+## Implementation checklist
+
+- Capture the open modal at 648px content width and compare its initial and scrolled states with both source screenshots.
+- Verify form submit, close control, backdrop close, Escape close, focus restoration, scroll locking, and mobile overflow.
+- Check browser console errors and inspect typography, borders, card padding, timeline alignment, and CTA placement.
+
+Comparison history: no rendered comparison was possible; there are no post-fix browser captures.
+
+final result: blocked
+
+---
+
 # Signup page verification
 
 - Source: two user-provided signup screenshots in this conversation.

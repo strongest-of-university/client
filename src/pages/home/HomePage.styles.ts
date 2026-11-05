@@ -99,6 +99,132 @@ export const GuestCard = styled.div`
     font-size: 15px;
   }
 `;
+export const ReservationList = styled.div``;
+export const ReservationRow = styled.article`
+  min-height: 109px;
+  padding: 22px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid #eae4d8;
+
+  @media (max-width: 600px) {
+    align-items: flex-start;
+  }
+`;
+export const ReservationSummary = styled.div`
+  min-width: 0;
+`;
+export const ReservationTitle = styled.h3`
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 1.5;
+`;
+export const ReservationDetails = styled.p`
+  margin: 0;
+  color: #6b665d;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: keep-all;
+`;
+export const StatusBadge = styled.span<{ $confirmed: boolean }>`
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid #1d1c1a;
+  border-radius: 999px;
+  background: ${({ $confirmed }) => ($confirmed ? "#1d1c1a" : "transparent")};
+  color: ${({ $confirmed }) => ($confirmed ? "#fffdf8" : "#1d1c1a")};
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+`;
+export const HistorySubtitle = styled.p`
+  margin: -12px 0 20px;
+  color: #6b665d;
+  font-size: 14px;
+`;
+export const HistoryList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+`;
+export const HistoryYear = styled.section``;
+export const HistoryYearTitle = styled.h3`
+  margin: 0 0 8px;
+  font-size: 21px;
+  line-height: 1.5;
+`;
+export const TripList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+export const TripItem = styled.li`
+  position: relative;
+  margin-left: 7px;
+  padding: 0 0 14px 23px;
+  border-left: 2px solid #e4ded3;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: -7px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #1d1c1a;
+  }
+
+  &:last-child { padding-bottom: 0; }
+`;
+export const TripDate = styled.h4`
+  margin: 0 0 10px;
+  font-size: 17px;
+  line-height: 1.5;
+`;
+export const TripCard = styled.article`
+  padding: 16px;
+  border: 1px solid #dfd4c4;
+  border-radius: 14px;
+  background: #fffdf9;
+`;
+export const TripTitle = styled.h5`
+  margin: 0 0 8px;
+  font-size: 17px;
+`;
+export const TripDetails = styled.dl`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+
+  div {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  dt { color: #6b665d; }
+  dd { margin: 0; }
+`;
+export const MoreTripsButton = styled.button`
+  width: 100%;
+  min-height: 62px;
+  margin-top: 30px;
+  border: 0;
+  border-radius: 14px;
+  background: #1d1c1a;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+
+  span { margin-left: 8px; font-size: 20px; }
+  &:hover { background: #39352f; }
+  &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+`;
 export const PrimaryLink = styled.a`
   display: block;
   width: 100%;

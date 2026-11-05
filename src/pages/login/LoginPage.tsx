@@ -1,13 +1,13 @@
 import Header from "../../components/Header";
-import { useState, type FormEvent } from "react";
+import { type FormEvent } from "react";
 import * as S from "./LoginPage.styles";
 
 export default function LoginPage({ reservationRequired = false }: { reservationRequired?: boolean }) {
-  const [message, setMessage] = useState("");
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage("로그인 서비스를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+    window.sessionStorage.setItem("isLoggedIn", "true");
+    window.sessionStorage.setItem("showTravelHistory", "true");
+    window.location.assign("/");
   }
 
   return (
@@ -20,7 +20,7 @@ export default function LoginPage({ reservationRequired = false }: { reservation
           </S.ReservationNotice>
         )}
         <S.Title>로그인</S.Title>
-        <S.Form onSubmit={handleSubmit} onChange={() => setMessage("")}>
+        <S.Form onSubmit={handleSubmit}>
           <S.Field>
             <S.Label htmlFor="login-id">아이디</S.Label>
             <S.Input id="login-id" name="username" autoComplete="username" required />
@@ -37,7 +37,6 @@ export default function LoginPage({ reservationRequired = false }: { reservation
             회원가입
           </S.SignupButton>
         </S.SignupPrompt>
-        <S.Message role="status" aria-live="polite">{message}</S.Message>
       </S.Main>
     </S.Page>
   );
