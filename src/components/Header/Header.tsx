@@ -3,10 +3,11 @@ import * as S from "./Header.styles";
 
 type HeaderProps = {
   variant?: "home" | "default" | "auth";
-  currentPage?: "theme" | "reservation" | "login";
+  currentPage?: "theme" | "reservation" | "mypage" | "login";
+  onReservationClick?: () => void;
 };
 
-export default function Header({ variant = "default", currentPage }: HeaderProps) {
+export default function Header({ variant = "default", currentPage, onReservationClick }: HeaderProps) {
   const [scrolled, setScrolled] = useState(() => window.scrollY > 24);
   const [loggedIn, setLoggedIn] = useState(
     () => window.sessionStorage.getItem("isLoggedIn") === "true",
@@ -31,15 +32,28 @@ export default function Header({ variant = "default", currentPage }: HeaderProps
       <S.Brand href="/" $variant={variant}>미스터 월드</S.Brand>
       <S.Nav aria-label="주 메뉴" $variant={variant}>
         <S.NavLink $variant={variant} href={variant === "home" ? "#themes" : "/#themes"} aria-current={currentPage === "theme" ? "page" : undefined}>THEME</S.NavLink>
-        <S.NavLink
-          $variant={variant}
-          href={loggedIn ? (variant === "home" ? "#reservation" : "/#reservation") : "/reservation"}
-          aria-current={currentPage === "reservation" ? "page" : undefined}
-        >
-          RESERVATION
-        </S.NavLink>
+        {loggedIn && onReservationClick ? (
+          <S.NavButton $variant={variant} type="button" onClick={onReservationClick}>RESERVATION</S.NavButton>
+        ) : (
+          <S.NavLink
+            $variant={variant}
+            href={loggedIn ? "/#reservation" : "/reservation"}
+            aria-current={currentPage === "reservation" ? "page" : undefined}
+          >
+            RESERVATION
+          </S.NavLink>
+        )}
         {loggedIn ? (
-          <S.NavButton $variant={variant} type="button" onClick={handleLogout}>LOGOUT</S.NavButton>
+          <>
+            <S.NavLink
+              $variant={variant}
+              href="/mypage"
+              aria-current={currentPage === "mypage" ? "page" : undefined}
+            >
+              MY PAGE
+            </S.NavLink>
+            <S.NavButton $variant={variant} type="button" onClick={handleLogout}>LOGOUT</S.NavButton>
+          </>
         ) : (
           <S.NavLink $variant={variant} href="/login" aria-current={currentPage === "login" ? "page" : undefined}>LOGIN</S.NavLink>
         )}

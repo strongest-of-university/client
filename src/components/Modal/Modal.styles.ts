@@ -21,11 +21,11 @@ export const Backdrop = styled.div<{ $open: boolean }>`
 `;
 
 export const Dialog = styled.div<{
-  $size: "default" | "large";
+  $size: "default" | "large" | "wide";
   $tone: "default" | "warm";
   $open: boolean;
 }>`
-  width: min(${({ $size }) => ($size === "large" ? "600px" : "480px")}, 100%);
+  width: min(${({ $size }) => ($size === "wide" ? "700px" : $size === "large" ? "600px" : "480px")}, 100%);
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   border-radius: 16px;
@@ -51,9 +51,9 @@ export const Header = styled.div`
   padding: 22px 24px 16px;
 `;
 
-export const Title = styled.h2<{ $size: "default" | "large" }>`
+export const Title = styled.h2<{ $size: "default" | "large" | "wide" }>`
   margin: 0;
-  font: 700 ${({ $size }) => ($size === "large" ? "clamp(24px, 4vw, 30px)" : "22px")} "Noto Serif KR", serif;
+  font: 700 ${({ $size }) => ($size === "default" ? "22px" : "clamp(24px, 4vw, 30px)")} "Noto Serif KR", serif;
   line-height: 1.35;
 `;
 
@@ -69,6 +69,8 @@ export const CloseButton = styled.button<{ $tone: "default" | "warm" }>`
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
+
+  svg { width: 21px; height: 21px; }
 
   &:focus-visible { outline: 2px solid #88745a; outline-offset: 3px; }
 `;

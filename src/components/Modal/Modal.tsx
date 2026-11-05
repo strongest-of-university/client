@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { FiX } from "react-icons/fi";
 import * as S from "./Modal.styles";
 
 export type ModalProps = {
@@ -7,7 +8,7 @@ export type ModalProps = {
   title: string;
   children: ReactNode;
   onClose: () => void;
-  size?: "default" | "large";
+  size?: "default" | "large" | "wide";
   tone?: "default" | "warm";
 };
 
@@ -60,7 +61,7 @@ export default function Modal({
         <S.Header>
           <S.Title id={titleId} $size={size}>{title}</S.Title>
           <S.CloseButton $tone={tone} ref={closeButtonRef} type="button" onClick={onClose} aria-label="모달 닫기">
-            ×
+            <FiX aria-hidden="true" />
           </S.CloseButton>
         </S.Header>
         <S.Content>{children}</S.Content>

@@ -1,3 +1,64 @@
+# My page verification
+
+- Source visual truth: user-provided logged-in My Page screenshot in this conversation.
+- Source pixels: 775 × 744.
+- Implementation route and state: `/mypage` with `sessionStorage.isLoggedIn` set to `true`.
+- Implementation screenshot path: unavailable because Computer Use reported no available browser and its native pipe was unavailable.
+- Viewport, CSS size, density normalization, browser console evidence, and focused-region capture: unavailable.
+
+## Findings
+
+- Full-view and focused-region comparisons are blocked by unavailable browser capture, so no visual-fidelity pass is claimed.
+- Fonts and typography: Korean serif page title and compact sans-serif reservation information follow the supplied hierarchy.
+- Spacing and layout rhythm: the page uses a centered 450px content column, date timeline, bordered cards, compact option rows, and responsive mobile gutters.
+- Colors and visual tokens: warm page background, near-black text and actions, beige borders, gray option rows, and muted reservation numbers match the supplied direction.
+- Copy and content: the 2026 timeline includes the recruiting healing tour, confirmed golf tour, and completed golf tour shown in the reference.
+- Interaction implemented: MY PAGE appears only when logged in; direct unauthenticated access shows Login; detail rows and the cancellable reservation provide status feedback.
+- Build and ESLint passed. These checks do not replace browser interaction or visual verification.
+
+## Implementation checklist
+
+- Capture `/mypage` at 775 × 744 and a narrow mobile viewport.
+- Verify Header wrapping, timeline line length, card widths, button states, and reservation feedback.
+- Check browser console errors, keyboard focus order, and logout/access-guard behavior.
+
+Comparison history: no rendered comparison was possible; there are no post-fix browser captures.
+
+final result: blocked
+
+---
+
+# Reservation method modal verification
+
+- Source visual truth: user-provided reservation method modal screenshot in this conversation.
+- Source pixels: 737 × 375.
+- Implementation states: reservation-required login submitted, or logged-in home Reservation control activated.
+- Implementation screenshot path: unavailable because Computer Use reported no available browser and its native pipe was unavailable.
+- Viewport, CSS size, density normalization, browser console evidence, and focused-region capture: unavailable.
+
+## Findings
+
+- Full-view and focused-region comparisons are blocked by unavailable browser capture, so no visual-fidelity pass is claimed.
+- Fonts and typography: the modal uses the existing Korean serif heading and compact sans-serif option copy with the reference hierarchy.
+- Spacing and layout rhythm: a 700px warm modal contains two equal bordered options and stacks them at the mobile breakpoint; rendered proportions remain unverified.
+- Colors and visual tokens: warm ivory modal surface, white option cards, near-black borders/text, and the existing backdrop match the supplied visual direction.
+- Image quality and assets: Feather microphone, pointer, and close icons are supplied by `react-icons`; no raster assets are required by the reference.
+- Copy and content: heading, voice option, direct-selection option, and both descriptions match the supplied screenshot.
+- Interaction implemented: reservation-required login opens this modal immediately after returning home; logged-in Header Reservation, hero booking CTA, and Reservation more control open the same modal. Voice shows a preparation message; direct selection closes the modal and targets the theme section.
+- Build and ESLint passed. These checks do not replace browser interaction or visual verification.
+
+## Implementation checklist
+
+- Capture and compare the open modal at the source width and a narrow mobile viewport.
+- Test both login entry paths, all three logged-in reservation controls, close actions, voice feedback, and direct-selection navigation.
+- Check browser console errors, focus order, icon alignment, responsive stacking, and the open/close animation.
+
+Comparison history: no rendered comparison was possible; there are no post-fix browser captures.
+
+final result: blocked
+
+---
+
 # Logged-in home reservation verification
 
 - Source visual truth: user-provided Reservation screenshot in this conversation.

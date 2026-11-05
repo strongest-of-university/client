@@ -4,6 +4,7 @@ import * as S from "./HomePage.styles";
 import { notices } from "../notices/notices";
 import Footer from "../../components/Footer";
 import Modal from "../../components/Modal";
+import { FiMic, FiMousePointer } from "react-icons/fi";
 
 const slides = [
   "/images/lake-aerial.jpg",
@@ -80,12 +81,30 @@ export default function HomePage() {
   const [historyOpen, setHistoryOpen] = useState(
     () => window.sessionStorage.getItem("showTravelHistory") === "true",
   );
+  const [reservationOptionsOpen, setReservationOptionsOpen] = useState(
+    () => window.sessionStorage.getItem("showReservationOptions") === "true",
+  );
+  const [reservationMessage, setReservationMessage] = useState("");
   const isLoggedIn = window.sessionStorage.getItem("isLoggedIn") === "true";
   const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (historyOpen) window.sessionStorage.removeItem("showTravelHistory");
   }, [historyOpen]);
+
+  useEffect(() => {
+    if (reservationOptionsOpen) window.sessionStorage.removeItem("showReservationOptions");
+  }, [reservationOptionsOpen]);
+
+  function openReservationOptions() {
+    setReservationMessage("");
+    setReservationOptionsOpen(true);
+  }
+
+  function selectDirectReservation() {
+    setReservationOptionsOpen(false);
+    window.location.hash = "themes";
+  }
 
   useEffect(() => {
     const timer = window.setInterval(
@@ -141,11 +160,18 @@ export default function HomePage() {
           />
         ))}
         <S.HeroOverlay />
-        <Header variant="home" />
+        <Header variant="home" onReservationClick={openReservationOptions} />
         <S.HeroCopy>
           <S.Eyebrow>Travel with a purpose.</S.Eyebrow>
           <S.HeroTitle>떠나는 이유에 맞춘 여행.</S.HeroTitle>
-          <S.ReservationButton href="/reservation">
+          <S.ReservationButton
+            href={isLoggedIn ? "#reservation" : "/reservation"}
+            onClick={(event) => {
+              if (!isLoggedIn) return;
+              event.preventDefault();
+              openReservationOptions();
+            }}
+          >
             여행 예약하기
           </S.ReservationButton>
         </S.HeroCopy>
@@ -177,7 +203,16 @@ export default function HomePage() {
         <S.InfoColumn id="reservation">
           <S.SectionHeading>
             <S.SectionTitle>Reservation</S.SectionTitle>
-            <S.MoreButton href={isLoggedIn ? "#reservation" : "/login"}>더보기 +</S.MoreButton>
+            <S.MoreButton
+              href={isLoggedIn ? "#reservation" : "/reservation"}
+              onClick={(event) => {
+                if (!isLoggedIn) return;
+                event.preventDefault();
+                openReservationOptions();
+              }}
+            >
+              더보기 +
+            </S.MoreButton>
           </S.SectionHeading>
           {isLoggedIn ? (
             <S.ReservationList>
@@ -259,6 +294,32 @@ export default function HomePage() {
         <S.MoreTripsButton type="button" onClick={() => setHistoryOpen(false)}>
           지난 여행 더 보러 가기 <span aria-hidden="true">→</span>
         </S.MoreTripsButton>
+      </Modal>
+      <Modal
+        open={reservationOptionsOpen}
+        title="어떻게 예약할까요?"
+        onClose={() => setReservationOptionsOpen(false)}
+        size="wide"
+        tone="warm"
+      >
+        <S.ReservationOptionGrid>
+          <S.ReservationOption
+            type="button"
+            onClick={() => setReservationMessage("음성 예약 서비스는 준비 중입니다.")}
+          >
+            <FiMic aria-hidden="true" />
+            <strong>음성으로</strong>
+            <span>말로 원하는 여행을 설명하면 필요한 정보를 되물어 채워 드려요</span>
+          </S.ReservationOption>
+          <S.ReservationOption type="button" onClick={selectDirectReservation}>
+            <FiMousePointer aria-hidden="true" />
+            <strong>직접 선택</strong>
+            <span>테마, 등급, 구성을 화면에서 하나씩 골라요</span>
+          </S.ReservationOption>
+        </S.ReservationOptionGrid>
+        <S.ReservationOptionMessage role="status" aria-live="polite">
+          {reservationMessage}
+        </S.ReservationOptionMessage>
       </Modal>
     </S.HomePage>
   );

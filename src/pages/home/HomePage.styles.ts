@@ -225,6 +225,63 @@ export const MoreTripsButton = styled.button`
   &:hover { background: #39352f; }
   &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
 `;
+export const ReservationOptionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding-top: 8px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+`;
+export const ReservationOption = styled.button`
+  min-height: 224px;
+  padding: 30px 24px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid #1d1c1a;
+  border-radius: 16px;
+  background: #fff;
+  color: #1d1c1a;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+
+  svg {
+    width: 34px;
+    height: 34px;
+    margin-bottom: 42px;
+    stroke-width: 1.8;
+  }
+
+  strong {
+    margin-bottom: 6px;
+    font-size: 21px;
+  }
+
+  span {
+    font-size: 14px;
+    line-height: 1.65;
+    word-break: keep-all;
+  }
+
+  &:hover {
+    background: #f7f3eb;
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible { outline: 3px solid #b69b68; outline-offset: 3px; }
+`;
+export const ReservationOptionMessage = styled.p`
+  margin: 14px 0 0;
+  color: #6b665d;
+  font-size: 13px;
+  text-align: center;
+
+  &:empty { display: none; }
+`;
 export const PrimaryLink = styled.a`
   display: block;
   width: 100%;

@@ -6,7 +6,13 @@ export default function LoginPage({ reservationRequired = false }: { reservation
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     window.sessionStorage.setItem("isLoggedIn", "true");
-    window.sessionStorage.setItem("showTravelHistory", "true");
+    if (reservationRequired) {
+      window.sessionStorage.removeItem("showTravelHistory");
+      window.sessionStorage.setItem("showReservationOptions", "true");
+    } else {
+      window.sessionStorage.removeItem("showReservationOptions");
+      window.sessionStorage.setItem("showTravelHistory", "true");
+    }
     window.location.assign("/");
   }
 
