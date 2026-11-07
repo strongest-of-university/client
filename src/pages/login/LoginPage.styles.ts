@@ -127,3 +127,13 @@ export const SignupButton = styled.a`
 
   &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
 `;
+
+export const StaffHint = styled.p`
+  margin: 24px 0 0;
+  color: #817970;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+
+  strong { color: #1d1c1a; }
+`;

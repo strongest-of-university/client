@@ -115,7 +115,7 @@ export const Summary = styled.p`
   line-height: 1.4;
 `;
 
-export const OptionButton = styled.button`
+export const OptionButton = styled.button<{ $open: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -133,6 +133,8 @@ export const OptionButton = styled.button`
     flex: none;
     color: #6a7b90;
     font-size: 15px;
+    transform: rotate(${({ $open }) => ($open ? "180deg" : "0")});
+    transition: transform 0.25s ease;
   }
 
   &:hover {
@@ -147,6 +149,49 @@ export const OptionButton = styled.button`
   @media (max-width: 520px) {
     gap: 8px;
     font-size: 9px;
+  }
+`;
+
+export const DetailPanel = styled.div<{ $open: boolean }>`
+  display: grid;
+  grid-template-rows: ${({ $open }) => ($open ? "1fr" : "0fr")};
+  opacity: ${({ $open }) => ($open ? 1 : 0)};
+  transition: grid-template-rows 0.35s ease, opacity 0.25s ease;
+`;
+
+export const DetailInner = styled.div`
+  overflow: hidden;
+`;
+
+export const DetailTitle = styled.h5`
+  margin: 14px 0 9px;
+  padding-top: 13px;
+  border-top: 1px solid #e9e3db;
+  font-size: 12px;
+`;
+
+export const DetailList = styled.dl`
+  display: grid;
+  gap: 7px;
+  margin: 0 0 2px;
+
+  div {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  dt {
+    color: #77716b;
+    font-size: 9px;
+  }
+
+  dd {
+    margin: 0;
+    color: #282521;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: right;
   }
 `;
 

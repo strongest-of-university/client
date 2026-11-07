@@ -5,6 +5,17 @@ import * as S from "./LoginPage.styles";
 export default function LoginPage({ reservationRequired = false }: { reservationRequired?: boolean }) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") ?? "").trim().toUpperCase();
+
+    if (username === "MW-S-021") {
+      window.sessionStorage.removeItem("isLoggedIn");
+      window.sessionStorage.setItem("isStaff", "true");
+      window.location.assign("/staff");
+      return;
+    }
+
+    window.sessionStorage.removeItem("isStaff");
     window.sessionStorage.setItem("isLoggedIn", "true");
     if (reservationRequired) {
       window.sessionStorage.removeItem("showTravelHistory");
@@ -43,6 +54,7 @@ export default function LoginPage({ reservationRequired = false }: { reservation
             회원가입
           </S.SignupButton>
         </S.SignupPrompt>
+        <S.StaffHint>직원은 사번 <strong>MW-S-021</strong>로 로그인해 주세요.</S.StaffHint>
       </S.Main>
     </S.Page>
   );
