@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
+import Modal from "../../components/Modal";
 import StaffHeader from "./StaffHeader";
 import { loadInventory, type InventoryId } from "./staffInventory";
 import * as S from "./StaffPage.styles";
@@ -16,7 +17,7 @@ type Product = {
   price: number;
   applicants: number;
   capacity: number;
-  status: "모집 중" | "출발 확정";
+  status: "모집 중" | "출발 확정" | "판매 취소";
 };
 
 const currency = new Intl.NumberFormat("ko-KR");
@@ -48,6 +49,7 @@ function durationBetween(start: string, end: string) {
 }
 
 export default function StaffPage() {
+  const [activeView, setActiveView] = useState<"create" | "list">("create");
   const [themeId, setThemeId] = useState<ThemeId>("trekking");
   const [startDate, setStartDate] = useState("2026-12-19");
   const [endDate, setEndDate] = useState("2026-12-23");
@@ -64,6 +66,8 @@ export default function StaffPage() {
   const [inventory] = useState(loadInventory);
   const [productFilter, setProductFilter] = useState<"all" | ThemeId>("all");
   const [message, setMessage] = useState("");
+  const [productMessage, setProductMessage] = useState("");
+  const [cancelTarget, setCancelTarget] = useState<Product | null>(null);
   const selectedTheme = themeInfo[themeId];
   const selectedStock = inventory[selectedTheme.inventoryId];
   const capacity = Number(capacityInput) || 0;
@@ -101,6 +105,15 @@ export default function StaffPage() {
     };
     setProducts((current) => [product, ...current]);
     setMessage(`${product.title} 상품이 등록되었습니다.`);
+    setProductMessage(`${product.title} 상품이 등록되었습니다.`);
+    setActiveView("list");
+  }
+
+  function cancelProduct() {
+    if (!cancelTarget) return;
+    setProducts((current) => current.map((product) => product.id === cancelTarget.id ? { ...product, status: "판매 취소" } : product));
+    setProductMessage(`${cancelTarget.title} ${cancelTarget.start} 상품이 취소되었습니다.`);
+    setCancelTarget(null);
   }
 
   return (
@@ -111,8 +124,13 @@ export default function StaffPage() {
         <S.Eyebrow>PRODUCT</S.Eyebrow>
         <S.Title>상품 기획</S.Title>
         <S.Description>테마를 골라 출발일·기간·가격·최대 인원을 정하고 출발 상품을 등록해요.</S.Description>
+        <S.ViewTabs aria-label="상품 기획 메뉴">
+          <S.ViewTab type="button" $selected={activeView === "create"} onClick={() => setActiveView("create")}>상품 등록</S.ViewTab>
+          <S.ViewTab type="button" $selected={activeView === "list"} onClick={() => setActiveView("list")}>등록 조회</S.ViewTab>
+        </S.ViewTabs>
 
         <S.Workspace>
+          {activeView === "create" ? (
           <S.Form id="product-form" onSubmit={registerProduct}>
             <S.FormTitle>새 상품 등록</S.FormTitle>
             <S.FieldLabel>테마</S.FieldLabel>
@@ -167,11 +185,11 @@ export default function StaffPage() {
             </S.OptionGroup>
             <S.OptionGroup><S.FieldLabel>추가 옵션</S.FieldLabel><S.FixedOptions><span><strong>샴페인</strong><S.EditablePrice><b>+</b><input aria-label="샴페인 추가 금액" type="number" min="0" step="1000" value={extraPrices.champagne} onChange={(event) => setExtraPrices((current) => ({ ...current, champagne: event.target.value }))} /></S.EditablePrice></span><span><strong>커피</strong><S.EditablePrice><b>+</b><input aria-label="커피 추가 금액" type="number" min="0" step="1000" value={extraPrices.coffee} onChange={(event) => setExtraPrices((current) => ({ ...current, coffee: event.target.value }))} /></S.EditablePrice></span></S.FixedOptions></S.OptionGroup>
 
-            <S.Warning><strong>주의</strong> 등록한 상품은 수정하거나 삭제할 수 없고 판매 중지도 할 수 없어요. 일정과 금액을 다시 한 번 확인해 주세요.</S.Warning>
+            <S.Warning><strong>주의</strong> 등록한 상품의 일정과 금액은 수정할 수 없어요. 상품 취소 시 예약자에게 취소 안내가 필요하므로 등록 전 다시 한 번 확인해 주세요.</S.Warning>
             <S.RegisterButton type="submit" disabled={stockShortage > 0}>상품 등록</S.RegisterButton>
             <S.FormMessage role="status">{message}</S.FormMessage>
           </S.Form>
-
+          ) : (
           <S.ProductSection id="registered-products">
             <S.ProductCount>등록된 상품 {filteredProducts.length}개</S.ProductCount>
             <S.ProductFilters aria-label="상품 테마 필터">
@@ -183,19 +201,30 @@ export default function StaffPage() {
                 </S.FilterButton>
               ))}
             </S.ProductFilters>
+            <S.ProductMessage role="status">{productMessage}</S.ProductMessage>
             <S.ProductList>
               {filteredProducts.map((product) => (
-                <S.ProductCard key={product.id}>
-                  <S.ProductHead><S.ProductName><i style={{ background: themeInfo[product.themeId].color }} /><span><strong>{product.title}</strong><small>{product.code}</small></span></S.ProductName><S.Status $confirmed={product.status === "출발 확정"}>{product.status}</S.Status></S.ProductHead>
+                <S.ProductCard key={product.id} $cancelled={product.status === "판매 취소"}>
+                  <S.ProductHead><S.ProductName><i style={{ background: themeInfo[product.themeId].color }} /><span><strong>{product.title}</strong><small>{product.code}</small></span></S.ProductName><S.Status $confirmed={product.status === "출발 확정"} $cancelled={product.status === "판매 취소"}>{product.status}</S.Status></S.ProductHead>
                   <S.ProductInfo>{product.start} – {product.end} · {product.duration} · 1인 {currency.format(product.price)}원</S.ProductInfo>
-                  <S.ProductInfo>신청 {product.applicants}명 / 최대 {product.capacity}명</S.ProductInfo>
+                  <S.ProductCapacityRow><S.ProductInfo>신청 {product.applicants}명 / 최대 {product.capacity}명</S.ProductInfo><S.CancelProductButton type="button" disabled={product.status === "판매 취소"} onClick={() => setCancelTarget(product)}>{product.status === "판매 취소" ? "취소 완료" : "상품 취소"}</S.CancelProductButton></S.ProductCapacityRow>
                 </S.ProductCard>
               ))}
               {filteredProducts.length === 0 && <S.EmptyProducts>선택한 테마에 등록된 상품이 없습니다.</S.EmptyProducts>}
             </S.ProductList>
           </S.ProductSection>
+          )}
         </S.Workspace>
       </S.Main>
+      <Modal open={cancelTarget !== null} title="상품을 취소할까요?" onClose={() => setCancelTarget(null)} tone="warm">
+        {cancelTarget && (
+          <>
+            <S.CancelProductSummary><strong>{cancelTarget.title}</strong><span>{cancelTarget.start} – {cancelTarget.end} · {cancelTarget.duration}</span><span>신청 {cancelTarget.applicants}명 / 최대 {cancelTarget.capacity}명</span></S.CancelProductSummary>
+            <S.CancelProductWarning><FiAlertTriangle aria-hidden="true" /><span><strong>취소 후에는 다시 판매할 수 없어요.</strong><small>신청자가 있다면 예약 취소와 환불 안내 문자를 별도로 발송해야 합니다.</small></span></S.CancelProductWarning>
+            <S.CancelProductActions><S.KeepProductButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.KeepProductButton><S.ConfirmProductCancelButton type="button" onClick={cancelProduct}>상품 취소하기</S.ConfirmProductCancelButton></S.CancelProductActions>
+          </>
+        )}
+      </Modal>
     </S.Page>
   );
 }

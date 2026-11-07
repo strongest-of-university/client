@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import Header from "../../components/Header";
+import Modal from "../../components/Modal";
 import * as S from "./MyPage.styles";
 
 type Reservation = {
@@ -85,6 +86,18 @@ const reservations: Reservation[] = [
 export default function MyPage() {
   const [message, setMessage] = useState("");
   const [expandedReservation, setExpandedReservation] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null);
+  const [cancelledReservations, setCancelledReservations] = useState<string[]>([]);
+  const cancelAmount = cancelTarget ? Number(cancelTarget.details.payment.replace(/\D/g, "")) : 0;
+  const cancellationFee = Math.round(cancelAmount * 0.1);
+  const refundAmount = cancelAmount - cancellationFee;
+
+  function confirmCancellation() {
+    if (!cancelTarget) return;
+    setCancelledReservations((current) => [...current, cancelTarget.reservationNumber]);
+    setMessage(`${cancelTarget.title} 예약이 취소되었습니다.`);
+    setCancelTarget(null);
+  }
 
   return (
     <S.Page>
@@ -96,13 +109,14 @@ export default function MyPage() {
           {reservations.map((reservation) => {
             const detailOpen = expandedReservation === reservation.reservationNumber;
             const detailId = `reservation-detail-${reservation.reservationNumber}`;
+            const cancelled = cancelledReservations.includes(reservation.reservationNumber);
 
             return (
             <S.TimelineItem key={reservation.reservationNumber}>
               <S.Date>{reservation.date}</S.Date>
               <S.Card>
                 <S.StatusRow>
-                  <S.Status>{reservation.status}</S.Status>
+                  <S.Status>{cancelled ? "예약 취소" : reservation.status}</S.Status>
                   <S.ReservationNumber>
                     {reservation.reservationNumber}
                   </S.ReservationNumber>
@@ -137,15 +151,19 @@ export default function MyPage() {
                   </S.DetailInner>
                 </S.DetailPanel>
 
-                {reservation.cancelState === "available" && (
+                {reservation.cancelState === "available" && !cancelled && (
                   <S.CancelButton
                     type="button"
-                    onClick={() =>
-                      setMessage("예약 취소 기능은 준비 중입니다.")
-                    }
+                    onClick={() => setCancelTarget(reservation)}
                   >
                     예약 취소
                   </S.CancelButton>
+                )}
+                {cancelled && (
+                  <>
+                    <S.CancelButton type="button" disabled>예약 취소 완료</S.CancelButton>
+                    <S.Note>취소 금액은 결제 수단에 따라 순차적으로 환불됩니다.</S.Note>
+                  </>
                 )}
                 {reservation.cancelState === "unavailable" && (
                   <>
@@ -166,6 +184,31 @@ export default function MyPage() {
           {message}
         </S.LiveMessage>
       </S.Main>
+      <Modal
+        open={cancelTarget !== null}
+        title="예약을 취소할까요?"
+        onClose={() => setCancelTarget(null)}
+        size="large"
+        tone="warm"
+      >
+        {cancelTarget && (
+          <>
+            <S.CancelSummary>
+              {cancelTarget.title} · {cancelTarget.details.period} · {cancelTarget.details.grade} · {cancelTarget.details.people} · {cancelTarget.details.payment}
+            </S.CancelSummary>
+            <S.RefundBox>
+              <div><span>결제 금액</span><strong>{cancelAmount.toLocaleString("ko-KR")}원</strong></div>
+              <div><span>위약금 (확정 전 10%)</span><strong className="fee">−{cancellationFee.toLocaleString("ko-KR")}원</strong></div>
+              <div className="refund"><span>환불 예정</span><strong>{refundAmount.toLocaleString("ko-KR")}원</strong></div>
+            </S.RefundBox>
+            <S.CancellationRule>위약금 기준(예시): 출발 확정 전 10%, 출발 확정 후 30%</S.CancellationRule>
+            <S.CancelActions>
+              <S.BackButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.BackButton>
+              <S.ConfirmCancelButton type="button" onClick={confirmCancellation}>취소하기</S.ConfirmCancelButton>
+            </S.CancelActions>
+          </>
+        )}
+      </Modal>
     </S.Page>
   );
 }

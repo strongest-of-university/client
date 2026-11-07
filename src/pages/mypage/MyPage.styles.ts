@@ -240,3 +240,72 @@ export const LiveMessage = styled.p`
     min-height: 0;
   }
 `;
+
+export const CancelSummary = styled.p`
+  margin: 0 0 20px;
+  color: #282521;
+  font-size: 14px;
+  line-height: 1.65;
+  word-break: keep-all;
+`;
+
+export const RefundBox = styled.div`
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f3eee5;
+
+  div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 3px 0;
+  }
+
+  span { color: #6f6860; font-size: 14px; }
+  strong { font-size: 15px; }
+  .fee { color: #ad3d20; }
+
+  .refund {
+    margin-top: 7px;
+    padding-top: 9px;
+    border-top: 1px solid #dcd2c5;
+
+    span, strong {
+      color: #1d1c1a;
+      font-weight: 700;
+    }
+  }
+`;
+
+export const CancellationRule = styled.p`
+  margin: 18px 0;
+  color: #766e66;
+  font-size: 12px;
+`;
+
+export const CancelActions = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  @media (max-width: 440px) { grid-template-columns: 1fr; }
+`;
+
+export const BackButton = styled.button`
+  min-height: 54px;
+  border: 1px solid #ddd1c1;
+  border-radius: 12px;
+  color: #1d1c1a;
+  background: #fffdf8;
+  font-size: 15px;
+  font-weight: 700;
+`;
+
+export const ConfirmCancelButton = styled(BackButton)`
+  border-color: #aa3c20;
+  color: #fff;
+  background: #aa3c20;
+
+  &:hover { background: #8f3018; }
+`;
