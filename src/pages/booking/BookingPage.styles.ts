@@ -179,10 +179,16 @@ export const ChoiceCard = styled.button<{ $selected: boolean }>`
   border-radius: 5px;
   color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
   background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  box-shadow: 0 3px 10px rgba(35, 29, 23, 0.04);
   text-align: left;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 
   strong { font-size: 13px; }
   span { color: ${({ $selected }) => $selected ? "#ddd8d1" : "#756e66"}; font-size: 10px; }
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(35, 29, 23, 0.1);
+  }
   &:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 2px; }
 `;
 
@@ -233,13 +239,19 @@ export const GradeCard = styled.button<{ $selected: boolean }>`
   border-radius: 5px;
   color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
   background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  box-shadow: 0 3px 10px rgba(35, 29, 23, 0.04);
   text-align: left;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 
   strong { font-size: 13px; }
   span { color: ${({ $selected }) => $selected ? "#ddd8d1" : "#756e66"}; font-size: 10px; }
   small { color: #a63d24; font-size: 9px; font-weight: 700; }
   &:disabled { color: #aaa49e; background: #f7f7f6; cursor: not-allowed; }
   &:disabled small { color: #a63d24; }
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(35, 29, 23, 0.1);
+  }
   &:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 2px; }
 `;
 
@@ -295,8 +307,9 @@ export const OptionButton = styled.button<{ $selected: boolean }>`
   border-radius: 5px;
   color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
   background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  box-shadow: 0 3px 10px rgba(35, 29, 23, 0.04);
   text-align: left;
-  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, transform 0.2s ease, box-shadow 0.2s ease;
 
   strong {
     font-size: 13px;
@@ -311,6 +324,8 @@ export const OptionButton = styled.button<{ $selected: boolean }>`
 
   &:hover:not(:disabled) {
     border-color: #1d1c1a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(35, 29, 23, 0.1);
   }
 
   &:disabled {
@@ -443,4 +458,315 @@ export const SubmitMessage = styled.p`
   text-align: center;
 
   &:empty { display: none; }
+`;
+
+export const LoadingBackdrop = styled.div`
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.38);
+`;
+
+export const LoadingDialog = styled.div`
+  display: grid;
+  place-items: center;
+  gap: 25px;
+  width: min(322px, 100%);
+  min-height: 184px;
+  padding: 32px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+
+  strong {
+    font-size: 17px;
+    text-align: center;
+  }
+`;
+
+export const Spinner = styled.span`
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e5e2dc;
+  border-bottom-color: #1d1c1a;
+  border-radius: 50%;
+  animation: payment-spin 0.85s linear infinite;
+
+  @keyframes payment-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 1.8s;
+  }
+`;
+
+export const CompletionBackdrop = styled(LoadingBackdrop)`
+  z-index: 1150;
+`;
+
+export const CompletionDialog = styled.div`
+  display: grid;
+  justify-items: center;
+  width: min(550px, 100%);
+  padding: 44px 34px 34px;
+  border-radius: 22px;
+  background: #fffdf8;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+`;
+
+export const CheckCircle = styled.span`
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 2px solid #1d1c1a;
+  border-radius: 50%;
+
+  svg {
+    width: 38px;
+    height: 38px;
+    stroke-width: 1.8;
+  }
+`;
+
+export const CompletionTitle = styled.h2`
+  margin: 18px 0 28px;
+  font: 700 27px "Noto Serif KR", serif;
+  text-align: center;
+`;
+
+export const CompletionActions = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+
+  @media (max-width: 440px) { grid-template-columns: 1fr; }
+`;
+
+export const HomeButton = styled.button`
+  min-height: 58px;
+  border: 1px solid #ded1c0;
+  border-radius: 12px;
+  color: #1d1c1a;
+  background: transparent;
+  font-size: 16px;
+`;
+
+export const HistoryButton = styled(HomeButton)`
+  border-color: #1d1c1a;
+  color: #fff;
+  background: #1d1c1a;
+  font-weight: 700;
+`;
+
+export const PaymentDescription = styled.p`
+  margin: 0 0 22px;
+  color: #393531;
+  font-size: 15px;
+`;
+
+export const PaymentFields = styled.div`
+  display: grid;
+  gap: 15px;
+`;
+
+export const PaymentField = styled.div`
+  display: grid;
+  gap: 7px;
+
+  label {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    height: 58px;
+    padding: 0 15px;
+    border: 1px solid #ddd1c1;
+    border-radius: 12px;
+    color: #1d1c1a;
+    background: #fff;
+    font: 500 17px "Noto Sans KR", sans-serif;
+    outline: none;
+  }
+
+  input::placeholder { color: #8b8986; }
+  input:focus { border-color: #1d1c1a; box-shadow: 0 0 0 2px rgba(29, 28, 26, 0.08); }
+`;
+
+export const InstallmentSelect = styled.div`
+  display: grid;
+  gap: 6px;
+`;
+
+export const InstallmentTrigger = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 58px;
+  padding: 0 15px;
+  border: 1px solid #ddd1c1;
+  border-radius: 12px;
+  color: #1d1c1a;
+  background: #fff;
+  font: 500 17px "Noto Sans KR", sans-serif;
+  text-align: left;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover { border-color: #a89d90; }
+  &:focus-visible { outline: 2px solid rgba(29, 28, 26, 0.18); outline-offset: 2px; }
+`;
+
+export const InstallmentList = styled.div`
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #ddd1c1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(35, 29, 23, 0.1);
+  animation: installment-open 0.2s ease-out;
+
+  @keyframes installment-open {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`;
+
+export const InstallmentOption = styled.button<{ $selected: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 0;
+  border-bottom: 1px solid #eee9e2;
+  color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
+  background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  font: 500 14px "Noto Sans KR", sans-serif;
+  text-align: left;
+
+  &:last-child { border-bottom: 0; }
+  &:hover { color: #fff; background: #1d1c1a; }
+  &:focus-visible { position: relative; outline: 2px solid #88745a; outline-offset: -3px; }
+`;
+
+export const PaymentFieldRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+
+  @media (max-width: 520px) { grid-template-columns: 1fr; }
+`;
+
+export const CardInputWrap = styled.div`
+  position: relative;
+
+  input { padding-right: 120px; }
+`;
+
+export const SecurityInputWrap = styled(CardInputWrap)`
+  input { padding-right: 50px; }
+
+  svg {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    width: 28px;
+    height: 28px;
+    transform: translateY(-50%);
+  }
+`;
+
+export const CardBrands = styled.span`
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  display: flex;
+  gap: 5px;
+  transform: translateY(-50%);
+
+  b {
+    display: grid;
+    place-items: center;
+    min-width: 31px;
+    height: 22px;
+    padding: 0 5px;
+    border-radius: 4px;
+    color: #fff;
+    background: #242476;
+    font: 800 11px Arial, sans-serif;
+  }
+
+  b:nth-child(2) { background: #e5102b; }
+  b:nth-child(3) { background: #171717; }
+`;
+
+export const PaymentTotal = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 22px -24px 0;
+  padding: 20px 24px;
+  border-top: 1px solid #e4dfd7;
+  border-bottom: 1px solid #e4dfd7;
+  background: #fffdf8;
+
+  > strong { font-size: 16px; }
+
+  span {
+    display: grid;
+    justify-items: end;
+  }
+
+  b { font-size: 24px; line-height: 1.25; }
+  small { color: #6f6962; font-size: 11px; }
+`;
+
+export const PaymentActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 20px;
+`;
+
+export const PreviousButton = styled.button`
+  min-width: 90px;
+  height: 55px;
+  border: 1px solid #ddd1c1;
+  border-radius: 12px;
+  color: #1d1c1a;
+  background: #fff;
+  font-size: 16px;
+`;
+
+export const ConfirmPaymentButton = styled.button`
+  min-width: 200px;
+  height: 55px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: #1d1c1a;
+  font-size: 15px;
+  font-weight: 700;
+
+  &:disabled {
+    color: #8d8984;
+    background: #dddddd;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 440px) { min-width: 0; flex: 1; }
 `;

@@ -1,6 +1,7 @@
-import { type FormEvent, useMemo, useState } from "react";
-import { FiChevronRight, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import Header from "../../components/Header";
+import Modal from "../../components/Modal";
 import * as S from "./BookingPage.styles";
 
 type Grade = {
@@ -138,6 +139,17 @@ export default function BookingPage() {
   const [drinkOptions, setDrinkOptions] = useState<string[]>([]);
   const [agreements, setAgreements] = useState([false, false, false]);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [securityCode, setSecurityCode] = useState("");
+  const [cardOwner, setCardOwner] = useState("");
+  const [installment, setInstallment] = useState("일시불");
+  const [installmentOpen, setInstallmentOpen] = useState(false);
+  const paymentTimerRef = useRef<number | null>(null);
 
   const theme = themes.find((item) => item.id === themeId);
   const schedule = theme?.schedules.find((item) => item.id === scheduleId);
@@ -162,6 +174,15 @@ export default function BookingPage() {
   const price = grade ? (grade.price + optionAdjustment) * people : 0;
   const discount = Math.round(price * 0.05);
   const finalPrice = price - discount;
+  const formattedCardNumber = cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ");
+  const paymentReady = cardNumber.length === 16
+    && /^\d{2} \/ \d{2}$/.test(expiry)
+    && securityCode.length === 3
+    && cardOwner.trim().length > 0;
+
+  useEffect(() => () => {
+    if (paymentTimerRef.current !== null) window.clearTimeout(paymentTimerRef.current);
+  }, []);
 
   const currentStep = useMemo(() => {
     if (!theme) return 1;
@@ -207,7 +228,33 @@ export default function BookingPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!isComplete) return;
-    setSubmitMessage("예약 신청이 접수되었습니다. 마이페이지에서 신청 내역을 확인해 주세요.");
+    setSubmitMessage("");
+    setPaymentLoading(true);
+    paymentTimerRef.current = window.setTimeout(() => {
+      setPaymentLoading(false);
+      setPaymentOpen(true);
+      paymentTimerRef.current = null;
+    }, 1000);
+  }
+
+  function updateCardNumber(value: string) {
+    setCardNumber(value.replace(/\D/g, "").slice(0, 16));
+  }
+
+  function formatExpiry(value: string) {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    setExpiry(digits.length > 2 ? `${digits.slice(0, 2)} / ${digits.slice(2)}` : digits);
+  }
+
+  function completePayment() {
+    if (!paymentReady) return;
+    setPaymentOpen(false);
+    setPaymentProcessing(true);
+    paymentTimerRef.current = window.setTimeout(() => {
+      setPaymentProcessing(false);
+      setPaymentCompleted(true);
+      paymentTimerRef.current = null;
+    }, 1200);
   }
 
   return (
@@ -399,6 +446,116 @@ export default function BookingPage() {
           <S.SubmitMessage role="status" aria-live="polite">{submitMessage}</S.SubmitMessage>
         </S.Summary>
       </S.BookingForm>
+
+      {paymentLoading && (
+        <S.LoadingBackdrop role="dialog" aria-modal="true" aria-label="결제 정보 불러오는 중">
+          <S.LoadingDialog>
+            <S.Spinner aria-hidden="true" />
+            <strong>결제 정보를 불러오는 중이에요</strong>
+          </S.LoadingDialog>
+        </S.LoadingBackdrop>
+      )}
+
+      {paymentProcessing && (
+        <S.LoadingBackdrop role="dialog" aria-modal="true" aria-label="결제 처리 중">
+          <S.LoadingDialog>
+            <S.Spinner aria-hidden="true" />
+            <strong>결제하는 중이에요</strong>
+          </S.LoadingDialog>
+        </S.LoadingBackdrop>
+      )}
+
+      {paymentCompleted && (
+        <S.CompletionBackdrop role="dialog" aria-modal="true" aria-labelledby="payment-complete-title">
+          <S.CompletionDialog>
+            <S.CheckCircle aria-hidden="true"><FiCheck /></S.CheckCircle>
+            <S.CompletionTitle id="payment-complete-title">결제가 완료되었어요</S.CompletionTitle>
+            <S.CompletionActions>
+              <S.HomeButton type="button" onClick={() => window.location.assign("/")}>홈으로</S.HomeButton>
+              <S.HistoryButton type="button" onClick={() => window.location.assign("/mypage")}>예약 내역 보기</S.HistoryButton>
+            </S.CompletionActions>
+          </S.CompletionDialog>
+        </S.CompletionBackdrop>
+      )}
+
+      <Modal
+        open={paymentOpen}
+        title="결제 수단 확인"
+        onClose={() => setPaymentOpen(false)}
+        size="large"
+        tone="warm"
+      >
+        <S.PaymentDescription>카드 정보를 입력해 주세요. 결제가 끝나면 예약 신청이 완료돼요.</S.PaymentDescription>
+        <S.PaymentFields>
+          <S.PaymentField>
+            <label htmlFor="manual-payment-number">카드 번호</label>
+            <S.CardInputWrap>
+              <input id="manual-payment-number" name="manual-payment-number" value={formattedCardNumber} onChange={(event) => updateCardNumber(event.target.value)} placeholder="1234 1234 1234 1234" inputMode="numeric" pattern="[0-9 ]*" maxLength={19} autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
+              <S.CardBrands aria-hidden="true"><b>VISA</b><b>MC</b><b>BC</b></S.CardBrands>
+            </S.CardInputWrap>
+          </S.PaymentField>
+          <S.PaymentFieldRow>
+            <S.PaymentField>
+              <label htmlFor="manual-valid-date">유효기간</label>
+              <input id="manual-valid-date" name="manual-valid-date" value={expiry} onChange={(event) => formatExpiry(event.target.value)} placeholder="월 / 년" inputMode="numeric" autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
+            </S.PaymentField>
+            <S.PaymentField>
+              <label htmlFor="manual-security-code">보안 코드</label>
+              <S.SecurityInputWrap>
+                <input id="manual-security-code" name="manual-security-code" value={securityCode} onChange={(event) => setSecurityCode(event.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="3자리" inputMode="numeric" autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
+                <FiCreditCard aria-hidden="true" />
+              </S.SecurityInputWrap>
+            </S.PaymentField>
+          </S.PaymentFieldRow>
+          <S.PaymentField>
+            <label htmlFor="manual-owner-name">카드 소유자 이름</label>
+            <input id="manual-owner-name" name="manual-owner-name" value={cardOwner} onChange={(event) => setCardOwner(event.target.value)} autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
+          </S.PaymentField>
+          <S.PaymentField>
+            <label id="installment-label">할부</label>
+            <S.InstallmentSelect>
+              <S.InstallmentTrigger
+                type="button"
+                aria-labelledby="installment-label"
+                aria-haspopup="listbox"
+                aria-expanded={installmentOpen}
+                onClick={() => setInstallmentOpen((open) => !open)}
+              >
+                <span>{installment}</span>
+                <FiChevronDown aria-hidden="true" />
+              </S.InstallmentTrigger>
+              {installmentOpen && (
+                <S.InstallmentList role="listbox" aria-labelledby="installment-label">
+                  {["일시불", "2개월", "3개월", "6개월", "12개월"].map((option) => (
+                    <S.InstallmentOption
+                      key={option}
+                      type="button"
+                      role="option"
+                      aria-selected={installment === option}
+                      $selected={installment === option}
+                      onClick={() => {
+                        setInstallment(option);
+                        setInstallmentOpen(false);
+                      }}
+                    >
+                      {option}
+                      {installment === option && <FiCheck aria-hidden="true" />}
+                    </S.InstallmentOption>
+                  ))}
+                </S.InstallmentList>
+              )}
+            </S.InstallmentSelect>
+          </S.PaymentField>
+        </S.PaymentFields>
+        <S.PaymentTotal>
+          <strong>총 결제 금액</strong>
+          <span><b>{currency.format(finalPrice)}원</b><small>유류할증료·세금 포함</small></span>
+        </S.PaymentTotal>
+        <S.PaymentActions>
+          <S.PreviousButton type="button" onClick={() => setPaymentOpen(false)}>이전</S.PreviousButton>
+          <S.ConfirmPaymentButton type="button" disabled={!paymentReady} onClick={completePayment}>결제하고 예약하기</S.ConfirmPaymentButton>
+        </S.PaymentActions>
+      </Modal>
     </S.Page>
   );
 }

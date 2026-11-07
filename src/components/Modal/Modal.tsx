@@ -22,6 +22,11 @@ export default function Modal({
 }: ModalProps) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -32,7 +37,7 @@ export default function Modal({
     closeButtonRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current();
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -41,7 +46,7 @@ export default function Modal({
       document.body.style.overflow = previousOverflow;
       previousActiveElement?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return createPortal(
     <S.Backdrop
