@@ -103,7 +103,7 @@ export default function HomePage() {
 
   function selectDirectReservation() {
     setReservationOptionsOpen(false);
-    window.location.hash = "themes";
+    window.location.assign("/booking");
   }
 
   useEffect(() => {

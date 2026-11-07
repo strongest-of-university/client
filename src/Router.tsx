@@ -2,6 +2,7 @@ import Home from './pages/home/HomePage'
 import LoginPage from './pages/login/LoginPage'
 import SignupPage from './pages/signup/SignupPage'
 import MyPage from './pages/mypage/MyPage'
+import BookingPage from './pages/booking/BookingPage'
 import NoticePage from './pages/notices/NoticePage'
 import ThemeDetailPage from './pages/themes/ThemeDetailPage'
 import { golfTheme, healingTheme, honeymoonTheme, trekkingTheme } from './pages/themes/themeDetails'
@@ -12,6 +13,9 @@ export default function Router() {
 
   if (pathname === '/mypage') {
     return window.sessionStorage.getItem('isLoggedIn') === 'true' ? <MyPage /> : <LoginPage />
+  }
+  if (pathname === '/booking') {
+    return window.sessionStorage.getItem('isLoggedIn') === 'true' ? <BookingPage /> : <LoginPage reservationRequired />
   }
   if (pathname === '/signup') {
     return <SignupPage />

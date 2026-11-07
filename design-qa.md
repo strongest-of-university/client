@@ -1,3 +1,32 @@
+# Direct booking page verification
+
+- Source visual truth: three user-provided direct-selection booking screenshots in this conversation.
+- Source pixels: 988 × 772, 920 × 537, and 941 × 420.
+- Implementation route and state: `/booking` with `sessionStorage.isLoggedIn` set to `true`; reached from the Direct selection reservation option.
+- Implementation screenshot path: unavailable because the in-app browser is unavailable in this environment.
+- Viewport, CSS size, density normalization, browser console evidence, and focused-region capture: unavailable.
+
+## Findings
+
+- Full-view and focused-region comparisons are blocked by unavailable browser capture, so no visual-fidelity pass is claimed.
+- Layout: the implementation follows the six-step header, wide left form column, sticky right summary card, stacked white sections, and responsive single-column mobile layout shown in the references.
+- Interaction implemented: theme selection unlocks departures and grades; people controls, grade restrictions, configuration selects, required agreements, live price calculation, discount, and submission feedback are functional.
+- Navigation implemented: the Home reservation modal's Direct selection action opens `/booking`; direct unauthenticated access returns to the reservation login flow.
+- Colors and typography use the existing warm white, near-black, beige border, and compact Korean type system.
+- Build and ESLint passed. These checks do not replace browser interaction or visual verification.
+
+## Implementation checklist
+
+- Capture the initial and completed booking states at the reference desktop width and a narrow mobile viewport.
+- Verify theme-to-schedule/grade resets, unavailable honeymoon/healing Classic grade, counter limits, option count, agreement toggles, price calculation, and submit state.
+- Check Header wrapping, sticky summary behavior, keyboard focus order, and browser console errors.
+
+Comparison history: no rendered comparison was possible; there are no post-fix browser captures.
+
+final result: blocked
+
+---
+
 # My page verification
 
 - Source visual truth: user-provided logged-in My Page screenshot in this conversation.

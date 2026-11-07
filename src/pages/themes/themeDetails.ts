@@ -56,7 +56,7 @@ export const honeymoonTheme: ThemeDetail = {
   tourStyles: [
     { name: "클래식", price: "1,890,000", hotel: "3성 호텔", meal: "도시락", unavailable: true },
     { name: "그랜드", price: "2,160,000", hotel: "4성 호텔", meal: "현지식 레스토랑", unavailable: false },
-    { name: "프리미엄", price: "2,550,000", hotel: "5성 호텔", meal: "스테이크 & 샴페인", unavailable: false },
+    { name: "프리미엄", price: "2,550,000", hotel: "5성 호텔", meal: "고급 레스토랑 스테이크 & 샴페인", unavailable: false },
   ],
 };
 
@@ -83,7 +83,7 @@ export const healingTheme: ThemeDetail = {
   tourStyles: [
     { name: "클래식", price: "1,290,000", hotel: "3성 호텔", meal: "도시락", unavailable: true },
     { name: "그랜드", price: "1,560,000", hotel: "4성 호텔", meal: "현지식 레스토랑", unavailable: false },
-    { name: "프리미엄", price: "1,950,000", hotel: "5성 호텔", meal: "스테이크 & 샴페인", unavailable: false },
+    { name: "프리미엄", price: "1,950,000", hotel: "5성 호텔", meal: "고급 레스토랑 스테이크 & 샴페인", unavailable: false },
   ],
 };
 
@@ -99,7 +99,7 @@ export const golfTheme: ThemeDetail = {
   features: [
     ["테마 연출", "유명 골프 리조트 테마 연출"],
     ["교통", "10인 승합 고급차량"],
-    ["기념품", "골프공"],
+    ["기념품", "골프 액세서리(골프공)"],
     ["출발 조건", "3명 이상 신청 시 출발 확정 · 문자 안내"],
   ],
   departures: [
@@ -109,7 +109,7 @@ export const golfTheme: ThemeDetail = {
   tourStyles: [
     { name: "클래식", price: "1,590,000", hotel: "3성 호텔", meal: "도시락", unavailable: false },
     { name: "그랜드", price: "1,860,000", hotel: "4성 호텔", meal: "현지식 레스토랑", unavailable: false },
-    { name: "프리미엄", price: "2,250,000", hotel: "5성 호텔", meal: "스테이크 & 샴페인", unavailable: false },
+    { name: "프리미엄", price: "2,250,000", hotel: "5성 호텔", meal: "고급 레스토랑 스테이크 & 샴페인", unavailable: false },
   ],
 };
 
@@ -125,7 +125,7 @@ export const trekkingTheme: ThemeDetail = {
   features: [
     ["테마 연출", "트레킹·산악 어드벤처 연출"],
     ["교통", "10인 승합 고급차량"],
-    ["기념품", "아웃도어 스카프"],
+    ["기념품", "아웃도어 기념품(스카프)"],
     ["출발 조건", "3명 이상 신청 시 출발 확정 · 문자 안내"],
   ],
   departures: [
@@ -135,6 +135,6 @@ export const trekkingTheme: ThemeDetail = {
   tourStyles: [
     { name: "클래식", price: "990,000", hotel: "3성 호텔", meal: "도시락", unavailable: false },
     { name: "그랜드", price: "1,260,000", hotel: "4성 호텔", meal: "현지식 레스토랑", unavailable: false },
-    { name: "프리미엄", price: "1,650,000", hotel: "5성 호텔", meal: "스테이크 & 샴페인", unavailable: false },
+    { name: "프리미엄", price: "1,650,000", hotel: "5성 호텔", meal: "고급 레스토랑 스테이크 & 샴페인", unavailable: false },
   ],
 };
