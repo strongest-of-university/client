@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import { cancelBooking, getBooking, getMyBookings, type BookingDto } from "../../api/services";
+import { cancelBooking, getBooking, getMyBookings, getMyProfile, updateMyProfile, type BookingDto, type UserProfile } from "../../api/services";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import * as S from "./MyPage.styles";
@@ -37,6 +37,12 @@ export default function MyPage() {
   const [expandedReservation, setExpandedReservation] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null);
   const [cancelledReservations, setCancelledReservations] = useState<string[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileDraft, setProfileDraft] = useState({ name: "", phoneNumber: "", address: "" });
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<"history" | "profile">("history");
   const cancelAmount = cancelTarget ? Number(cancelTarget.details.payment.replace(/\D/g, "")) : 0;
   const cancellationFee = cancelTarget?.cancellationFee ?? Math.round(cancelAmount * 0.1);
   const refundAmount = cancelTarget?.refundAmount ?? cancelAmount - cancellationFee;
@@ -55,6 +61,48 @@ export default function MyPage() {
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    getMyProfile()
+      .then((data) => { if (active) setProfile(data); })
+      .catch((error) => { if (active) setMessage(getErrorMessage(error)); });
+    return () => { active = false; };
+  }, []);
+
+  function openProfileEditor() {
+    if (!profile) return;
+    setProfileDraft({ name: profile.name, phoneNumber: profile.phoneNumber, address: profile.address });
+    setProfileMessage("");
+    setProfileOpen(true);
+  }
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = profileDraft.name.trim();
+    const phoneNumber = profileDraft.phoneNumber.trim();
+    const address = profileDraft.address.trim();
+    if (!name || !address) {
+      setProfileMessage("이름과 주소를 모두 입력해 주세요.");
+      return;
+    }
+    if (!/^01[016789]-?\d{3,4}-?\d{4}$/.test(phoneNumber)) {
+      setProfileMessage("휴대폰 번호를 확인해 주세요. 예: 010-1234-5678");
+      return;
+    }
+    setProfileSaving(true);
+    setProfileMessage("");
+    try {
+      const updated = await updateMyProfile({ name, phoneNumber, address });
+      setProfile(updated);
+      setProfileOpen(false);
+      setMessage("회원 정보가 수정되었습니다.");
+    } catch (error) {
+      setProfileMessage(getErrorMessage(error));
+    } finally {
+      setProfileSaving(false);
+    }
+  }
 
   async function confirmCancellation() {
     if (!cancelTarget) return;
@@ -92,7 +140,45 @@ export default function MyPage() {
     <S.Page>
       <Header currentPage="mypage" />
       <S.Main>
-        <S.Title>마이페이지</S.Title>
+        <S.TitleRow>
+          <S.Title>마이페이지</S.Title>
+        </S.TitleRow>
+        <S.MyPageTabs role="tablist" aria-label="마이페이지 메뉴">
+          <S.MyPageTab
+            type="button"
+            role="tab"
+            aria-selected={activeSection === "history"}
+            $active={activeSection === "history"}
+            onClick={() => setActiveSection("history")}
+          >
+            여행 내역
+          </S.MyPageTab>
+          <S.MyPageTab
+            type="button"
+            role="tab"
+            aria-selected={activeSection === "profile"}
+            $active={activeSection === "profile"}
+            onClick={() => setActiveSection("profile")}
+          >
+            회원 정보
+          </S.MyPageTab>
+        </S.MyPageTabs>
+
+        {activeSection === "profile" && (
+          <>
+            {profile ? (
+              <S.ProfileCard>
+                <div><span>이름</span><strong>{profile.name}</strong></div>
+                <div><span>휴대폰 번호</span><strong>{profile.phoneNumber}</strong></div>
+                <div><span>주소</span><strong>{profile.address}</strong></div>
+              </S.ProfileCard>
+            ) : <S.LiveMessage role="status">회원 정보를 불러오는 중입니다.</S.LiveMessage>}
+            <S.ProfileEditButton type="button" onClick={openProfileEditor} disabled={!profile}>정보 수정하기</S.ProfileEditButton>
+            <S.LiveMessage role="status" aria-live="polite">{message}</S.LiveMessage>
+          </>
+        )}
+
+        {activeSection === "history" && <>
         <S.Year>{new Date().getFullYear()}년</S.Year>
         {loading && <S.LiveMessage role="status">예약 내역을 불러오는 중입니다.</S.LiveMessage>}
         {!loading && reservations.length === 0 && !message && <S.LiveMessage role="status">예약 내역이 없습니다.</S.LiveMessage>}
@@ -172,7 +258,34 @@ export default function MyPage() {
         <S.LiveMessage role="status" aria-live="polite">
           {message}
         </S.LiveMessage>
+        </>}
       </S.Main>
+      <Modal
+        open={profileOpen}
+        title="회원 정보 수정"
+        onClose={() => !profileSaving && setProfileOpen(false)}
+        tone="warm"
+      >
+        <S.ProfileForm onSubmit={(event) => void saveProfile(event)}>
+          <S.ProfileField>
+            <label htmlFor="profile-name">이름</label>
+            <input id="profile-name" value={profileDraft.name} onChange={(event) => setProfileDraft((current) => ({ ...current, name: event.target.value }))} autoComplete="name" required />
+          </S.ProfileField>
+          <S.ProfileField>
+            <label htmlFor="profile-phone">휴대폰 번호</label>
+            <input id="profile-phone" value={profileDraft.phoneNumber} onChange={(event) => setProfileDraft((current) => ({ ...current, phoneNumber: event.target.value }))} autoComplete="tel" inputMode="tel" placeholder="010-1234-5678" required />
+          </S.ProfileField>
+          <S.ProfileField>
+            <label htmlFor="profile-address">주소</label>
+            <input id="profile-address" value={profileDraft.address} onChange={(event) => setProfileDraft((current) => ({ ...current, address: event.target.value }))} autoComplete="street-address" required />
+          </S.ProfileField>
+          <S.ProfileFormMessage role="alert" aria-live="polite">{profileMessage}</S.ProfileFormMessage>
+          <S.ProfileActions>
+            <S.BackButton type="button" onClick={() => setProfileOpen(false)} disabled={profileSaving}>돌아가기</S.BackButton>
+            <S.SaveProfileButton type="submit" disabled={profileSaving}>{profileSaving ? "저장 중..." : "저장하기"}</S.SaveProfileButton>
+          </S.ProfileActions>
+        </S.ProfileForm>
+      </Modal>
       <Modal
         open={cancelTarget !== null}
         title="예약을 취소할까요?"

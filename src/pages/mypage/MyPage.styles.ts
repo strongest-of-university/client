@@ -17,7 +17,7 @@ export const Main = styled.main`
 `;
 
 export const Title = styled.h1`
-  margin: 0 0 20px;
+  margin: 0;
   font-family: "Noto Serif KR", serif;
   font-size: 23px;
   line-height: 1.35;
@@ -25,6 +25,93 @@ export const Title = styled.h1`
   @media (max-width: 520px) {
     font-size: 21px;
   }
+`;
+
+export const TitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+`;
+
+export const MyPageTabs = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 28px;
+  border-bottom: 1px solid #d8cec0;
+`;
+
+export const MyPageTab = styled.button<{ $active: boolean }>`
+  position: relative;
+  min-height: 44px;
+  padding: 10px 12px 12px;
+  border: 0;
+  color: ${({ $active }) => ($active ? "#1d1c1a" : "#8a837b")};
+  background: transparent;
+  font-size: 12px;
+  font-weight: ${({ $active }) => ($active ? 800 : 600)};
+  transition: color 0.2s ease, background 0.2s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    background: #1d1c1a;
+    transform: scaleX(${({ $active }) => ($active ? 1 : 0)});
+    transition: transform 0.25s ease;
+  }
+
+  &:hover {
+    color: #1d1c1a;
+    background: rgba(29, 28, 26, 0.035);
+  }
+
+  &:focus-visible {
+    z-index: 1;
+    outline: 2px solid #786c5d;
+    outline-offset: -2px;
+  }
+`;
+
+export const ProfileEditButton = styled.button`
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 4px;
+  padding: 9px 14px;
+  border: 1px solid #1d1c1a;
+  border-radius: 7px;
+  color: #1d1c1a;
+  background: #fffdf8;
+  font-size: 10px;
+  font-weight: 700;
+
+  &:hover:not(:disabled) { color: #fff; background: #1d1c1a; }
+  &:focus-visible { outline: 2px solid #786c5d; outline-offset: 2px; }
+  &:disabled { opacity: 0.45; cursor: wait; }
+`;
+
+export const ProfileCard = styled.section`
+  display: grid;
+  gap: 8px;
+  margin-bottom: 22px;
+  padding: 13px 14px;
+  border: 1px solid #ded5c8;
+  border-radius: 11px;
+  background: #fff;
+
+  div {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 12px;
+    align-items: baseline;
+  }
+
+  span { color: #77716b; font-size: 9px; }
+  strong { font-size: 10px; text-align: right; word-break: keep-all; }
 `;
 
 export const Year = styled.h2`
@@ -241,6 +328,55 @@ export const LiveMessage = styled.p`
   }
 `;
 
+export const ProfileForm = styled.form`
+  display: grid;
+  gap: 14px;
+`;
+
+export const ProfileField = styled.div`
+  display: grid;
+  gap: 6px;
+
+  label {
+    color: #655f58;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 13px;
+    border: 1px solid #ddd1c1;
+    border-radius: 9px;
+    color: #1d1c1a;
+    background: #fffdf8;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  input:focus-visible {
+    outline: 2px solid #8a765c;
+    outline-offset: 2px;
+  }
+`;
+
+export const ProfileFormMessage = styled.p`
+  margin: -2px 0 0;
+  color: #ad3d20;
+  font-size: 11px;
+  line-height: 1.5;
+
+  &:empty { display: none; }
+`;
+
+export const ProfileActions = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+`;
+
 export const CancelSummary = styled.p`
   margin: 0 0 20px;
   color: #282521;
@@ -308,4 +444,13 @@ export const ConfirmCancelButton = styled(BackButton)`
   background: #aa3c20;
 
   &:hover { background: #8f3018; }
+`;
+
+export const SaveProfileButton = styled(BackButton)`
+  border-color: #1d1c1a;
+  color: #fff;
+  background: #1d1c1a;
+
+  &:hover:not(:disabled) { background: #39352f; }
+  &:disabled { opacity: 0.55; cursor: wait; }
 `;
