@@ -1,4 +1,5 @@
 import Header from "../../components/Header";
+import { getAccessToken } from "../../api/client";
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
 import { notices } from "../notices/notices";
@@ -85,7 +86,7 @@ export default function HomePage() {
     () => window.sessionStorage.getItem("showReservationOptions") === "true",
   );
   const [reservationMessage, setReservationMessage] = useState("");
-  const isLoggedIn = window.sessionStorage.getItem("isLoggedIn") === "true";
+  const isLoggedIn = Boolean(getAccessToken()) && window.sessionStorage.getItem("isLoggedIn") === "true";
   const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiChevronDown } from "react-icons/fi";
+import { getErrorMessage } from "../../api/client";
+import { cancelBooking, getBooking, getMyBookings, type BookingDto } from "../../api/services";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import * as S from "./MyPage.styles";
 
 type Reservation = {
+  bookingId: number;
   date: string;
   status: string;
   reservationNumber: string;
@@ -22,81 +25,67 @@ type Reservation = {
     payment: string;
   };
   cancelState?: "available" | "unavailable";
+  cancellationFee?: number;
+  refundAmount?: number;
 };
 
-const reservations: Reservation[] = [
-  {
-    date: "12월 05일 (토)",
-    status: "모집 중",
-    reservationNumber: "MW-261205-004",
-    title: "효도 힐링 투어",
-    summary: "12.05 – 12.09 · 2명 · 3,078,000원",
-    option: "그랜드 / 4성 호텔 / 4박 5일 / 현지식 레스토랑",
-    details: {
-      period: "2026.12.05 – 12.09 (4박 5일)",
-      people: "2명",
-      grade: "그랜드",
-      hotel: "4성급 호텔",
-      transport: "10인 승합 고급차량",
-      meal: "현지식 레스토랑",
-      gift: "건강 인삼",
-      payment: "3,078,000원",
-    },
-    cancelState: "available",
-  },
-  {
-    date: "11월 21일 (토)",
-    status: "출발 확정",
-    reservationNumber: "MW-261121-018",
-    title: "골프 챌린지 투어",
-    summary: "11.21 – 11.24 · 2명 · 4,180,000원",
-    option: "프리미엄 / 5성 호텔 / 3박 4일 / 스테이크 & 샴페인",
-    details: {
-      period: "2026.11.21 – 11.24 (3박 4일)",
-      people: "2명",
-      grade: "프리미엄",
-      hotel: "5성급 호텔",
-      transport: "10인 승합 고급차량",
-      meal: "스테이크 & 샴페인",
-      gift: "골프공",
-      payment: "4,180,000원",
-    },
-    cancelState: "unavailable",
-  },
-  {
-    date: "05월 10일 (일)",
-    status: "여행 완료",
-    reservationNumber: "MW-260510-022",
-    title: "골프 챌린지 투어",
-    summary: "05.10 – 05.13 · 1명 · 2,340,000원",
-    option: "프리미엄 / 5성 호텔 / 3박 4일 / 스테이크 & 샴페인",
-    details: {
-      period: "2026.05.10 – 05.13 (3박 4일)",
-      people: "1명",
-      grade: "프리미엄",
-      hotel: "5성급 호텔",
-      transport: "10인 승합 고급차량",
-      meal: "스테이크 & 샴페인",
-      gift: "골프공",
-      payment: "2,340,000원",
-    },
-  },
-];
-
 export default function MyPage() {
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const [expandedReservation, setExpandedReservation] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null);
   const [cancelledReservations, setCancelledReservations] = useState<string[]>([]);
   const cancelAmount = cancelTarget ? Number(cancelTarget.details.payment.replace(/\D/g, "")) : 0;
-  const cancellationFee = Math.round(cancelAmount * 0.1);
-  const refundAmount = cancelAmount - cancellationFee;
+  const cancellationFee = cancelTarget?.cancellationFee ?? Math.round(cancelAmount * 0.1);
+  const refundAmount = cancelTarget?.refundAmount ?? cancelAmount - cancellationFee;
 
-  function confirmCancellation() {
+  useEffect(() => {
+    let active = true;
+    getMyBookings()
+      .then((bookings) => {
+        if (active) setReservations(bookings.map(toReservation));
+      })
+      .catch((error) => {
+        if (active) setMessage(getErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  async function confirmCancellation() {
     if (!cancelTarget) return;
-    setCancelledReservations((current) => [...current, cancelTarget.reservationNumber]);
-    setMessage(`${cancelTarget.title} 예약이 취소되었습니다.`);
-    setCancelTarget(null);
+    setCancelling(true);
+    try {
+      const cancelled = await cancelBooking(cancelTarget.bookingId);
+      setReservations((current) => current.map((reservation) =>
+        reservation.bookingId === cancelTarget.bookingId ? toReservation(cancelled) : reservation,
+      ));
+      setCancelledReservations((current) => [...current, cancelTarget.reservationNumber]);
+      setMessage(`${cancelTarget.title} 예약이 취소되었습니다.`);
+      setCancelTarget(null);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  async function toggleDetails(reservation: Reservation) {
+    if (expandedReservation === reservation.reservationNumber) {
+      setExpandedReservation(null);
+      return;
+    }
+    setExpandedReservation(reservation.reservationNumber);
+    try {
+      const detail = await getBooking(reservation.bookingId);
+      setReservations((current) => current.map((item) => item.bookingId === reservation.bookingId ? toReservation(detail) : item));
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
   }
 
   return (
@@ -104,7 +93,9 @@ export default function MyPage() {
       <Header currentPage="mypage" />
       <S.Main>
         <S.Title>마이페이지</S.Title>
-        <S.Year>2026년</S.Year>
+        <S.Year>{new Date().getFullYear()}년</S.Year>
+        {loading && <S.LiveMessage role="status">예약 내역을 불러오는 중입니다.</S.LiveMessage>}
+        {!loading && reservations.length === 0 && !message && <S.LiveMessage role="status">예약 내역이 없습니다.</S.LiveMessage>}
         <S.Timeline>
           {reservations.map((reservation) => {
             const detailOpen = expandedReservation === reservation.reservationNumber;
@@ -126,9 +117,7 @@ export default function MyPage() {
                 <S.OptionButton
                   type="button"
                   $open={detailOpen}
-                  onClick={() => setExpandedReservation((current) =>
-                    current === reservation.reservationNumber ? null : reservation.reservationNumber,
-                  )}
+                  onClick={() => void toggleDetails(reservation)}
                   aria-expanded={detailOpen}
                   aria-controls={detailId}
                 >
@@ -204,11 +193,77 @@ export default function MyPage() {
             <S.CancellationRule>위약금 기준(예시): 출발 확정 전 10%, 출발 확정 후 30%</S.CancellationRule>
             <S.CancelActions>
               <S.BackButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.BackButton>
-              <S.ConfirmCancelButton type="button" onClick={confirmCancellation}>취소하기</S.ConfirmCancelButton>
+              <S.ConfirmCancelButton type="button" onClick={() => void confirmCancellation()} disabled={cancelling}>{cancelling ? "취소 중..." : "취소하기"}</S.ConfirmCancelButton>
             </S.CancelActions>
           </>
         )}
       </Modal>
     </S.Page>
   );
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: "모집 중",
+  BOOKED: "모집 중",
+  CONFIRMED: "출발 확정",
+  CANCELLED: "예약 취소",
+  COMPLETED: "여행 완료",
+};
+
+const LEVEL_LABEL: Record<string, string> = { CLASSIC: "클래식", GRAND: "그랜드", PREMIUM: "프리미엄" };
+const MEAL_LABEL: Record<number, string> = { 1: "도시락", 2: "현지식 레스토랑", 3: "스테이크 & 샴페인" };
+const TRANSPORT_LABEL: Record<number, string> = { 1: "2인 고급차량", 2: "10인 승합 고급차량" };
+const GIFT_LABEL: Record<string, string> = { HONEYMOON: "커플 기념티", HEALING: "건강 인삼", GOLF: "골프공", TREKKING: "아웃도어 스카프" };
+
+function formatDate(value?: string, includeYear = false) {
+  if (!value) return "일정 미정";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ko-KR", {
+    ...(includeYear ? { year: "numeric" as const } : {}),
+    month: "2-digit",
+    day: "2-digit",
+    weekday: includeYear ? undefined : "short",
+  }).format(date);
+}
+
+function productName(booking: BookingDto) {
+  if (typeof booking.travelProduct === "string") return booking.travelProduct;
+  return booking.travelProduct?.name ?? booking.travelProduct?.title ?? booking.travelProductName ?? "테마 여행";
+}
+
+function toReservation(booking: BookingDto): Reservation {
+  const title = productName(booking);
+  const people = booking.numberOfPeople ?? 0;
+  const price = booking.totalPrice ?? 0;
+  const grade = LEVEL_LABEL[booking.tourLevel ?? ""] ?? booking.tourLevel ?? "등급 미정";
+  const hotel = booking.selectedHotel ? `${booking.selectedHotel}성급 호텔` : "호텔 미정";
+  const transport = TRANSPORT_LABEL[booking.selectedTransportation ?? 0] ?? "교통 미정";
+  const meal = MEAL_LABEL[booking.selectedMeal ?? 0] ?? "식사 미정";
+  const theme = booking.theme ?? (typeof booking.travelProduct === "object" ? booking.travelProduct?.theme : undefined) ?? "";
+  const status = STATUS_LABEL[booking.status] ?? booking.status;
+  const cancelled = booking.status === "CANCELLED";
+  const unavailable = booking.status === "CONFIRMED" || booking.status === "COMPLETED";
+  return {
+    bookingId: booking.bookingId,
+    date: formatDate(booking.departureDate),
+    status,
+    reservationNumber: `MW-${String(booking.bookingId).padStart(6, "0")}`,
+    title,
+    summary: `${formatDate(booking.departureDate)} – ${formatDate(booking.returnDate)} · ${people}명 · ${price.toLocaleString("ko-KR")}원`,
+    option: `${grade} / ${hotel} / ${meal}`,
+    details: {
+      period: `${formatDate(booking.departureDate, true)} – ${formatDate(booking.returnDate, true)}`,
+      people: `${people}명`,
+      grade,
+      hotel,
+      transport,
+      meal,
+      gift: GIFT_LABEL[theme] ?? "기념품 미정",
+      payment: `${price.toLocaleString("ko-KR")}원`,
+    },
+    cancelState: cancelled ? undefined : unavailable ? "unavailable" : "available",
+    cancellationFee: booking.cancellationFee,
+    refundAmount: booking.refundAmount,
+  };
 }

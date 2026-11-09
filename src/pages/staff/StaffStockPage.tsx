@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getErrorMessage } from "../../api/client";
+import { changeInventory, getInventory, type InventoryApiItem } from "../../api/services";
 import StaffHeader from "./StaffHeader";
 import { loadInventory, saveInventory, type Inventory, type InventoryId } from "./staffInventory";
 import * as S from "./StaffStockPage.styles";
@@ -8,6 +10,28 @@ export default function StaffStockPage() {
   const [pendingChanges, setPendingChanges] = useState<Partial<Record<InventoryId, number>>>({});
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getInventory()
+      .then((items) => {
+        if (!active) return;
+        setInventory((current) => {
+          const next = { ...current };
+          items.forEach((item) => {
+            const itemId = API_TO_INVENTORY_ID[item.item];
+            if (itemId) next[itemId] = { ...next[itemId], amount: item.quantity };
+          });
+          saveInventory(next);
+          return next;
+        });
+      })
+      .catch((error) => {
+        if (active) setMessage(`재고를 불러오지 못했습니다. ${getErrorMessage(error)}`);
+      });
+    return () => { active = false; };
+  }, []);
 
   function stageStockChange(itemId: InventoryId, change: number) {
     setMessage("");
@@ -22,18 +46,42 @@ export default function StaffStockPage() {
   const changedItemCount = Object.values(pendingChanges).filter((change) => change !== 0).length;
   const changeReady = changedItemCount > 0 && reason.trim().length > 0;
 
-  function submitStockChanges() {
+  async function submitStockChanges() {
     if (!changeReady) return;
-    const next = { ...inventory };
-    (Object.entries(pendingChanges) as [InventoryId, number][]).forEach(([itemId, change]) => {
-      if (!change) return;
-      next[itemId] = { ...next[itemId], amount: Math.max(0, next[itemId].amount + change) };
-    });
-    setInventory(next);
-    saveInventory(next);
-    setPendingChanges({});
-    setReason("");
-    setMessage(`${changedItemCount}개 품목의 재고 변경이 제출되었습니다.`);
+    setSubmitting(true);
+    setMessage("");
+    const changes = (Object.entries(pendingChanges) as [InventoryId, number][]).filter(([, change]) => change !== 0);
+    try {
+      await Promise.all(changes.map(([itemId, change]) => {
+        const apiItem = INVENTORY_ID_TO_API[itemId];
+        return apiItem ? changeInventory(apiItem, change, reason.trim()) : Promise.resolve();
+      }));
+
+      const next = { ...inventory };
+      changes.forEach(([itemId, change]) => {
+        next[itemId] = { ...next[itemId], amount: Math.max(0, next[itemId].amount + change) };
+      });
+      setInventory(next);
+      saveInventory(next);
+      setPendingChanges({});
+      setReason("");
+      setMessage(`${changedItemCount}개 품목의 재고 변경이 제출되었습니다.`);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+      getInventory().then((items) => {
+        setInventory((current) => {
+          const next = { ...current };
+          items.forEach((item) => {
+            const itemId = API_TO_INVENTORY_ID[item.item];
+            if (itemId) next[itemId] = { ...next[itemId], amount: item.quantity };
+          });
+          saveInventory(next);
+          return next;
+        });
+      }).catch(() => undefined);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -74,10 +122,24 @@ export default function StaffStockPage() {
             <textarea value={reason} maxLength={255} placeholder="예: 기념품 신규 입고 및 파손 재고 조정" onChange={(event) => setReason(event.target.value)} required />
             <small>{reason.length}/255</small>
           </S.ReasonField>
-          <S.SubmitChangesButton type="submit" disabled={!changeReady}>변경사항 제출</S.SubmitChangesButton>
+          <S.SubmitChangesButton type="submit" disabled={!changeReady || submitting}>{submitting ? "제출 중..." : "변경사항 제출"}</S.SubmitChangesButton>
         </S.SubmissionPanel>
         <S.Message role="status">{message}</S.Message>
       </S.Main>
     </S.Page>
   );
 }
+
+const INVENTORY_ID_TO_API: Partial<Record<InventoryId, InventoryApiItem>> = {
+  "couple-shirt": "COUPLE_TSHIRT",
+  ginseng: "GINSENG",
+  "golf-ball": "GOLF_BALL",
+  scarf: "SCARF",
+};
+
+const API_TO_INVENTORY_ID: Record<InventoryApiItem, InventoryId> = {
+  COUPLE_TSHIRT: "couple-shirt",
+  GINSENG: "ginseng",
+  GOLF_BALL: "golf-ball",
+  SCARF: "scarf",
+};

@@ -1,8 +1,9 @@
 import * as S from "./StaffPage.styles";
+import { clearSession } from "../../api/client";
 
 export default function StaffHeader({ current }: { current: "product" | "reservation" | "stock" | "sms" }) {
   function logout() {
-    window.sessionStorage.removeItem("isStaff");
+    clearSession();
     window.location.assign("/login");
   }
 

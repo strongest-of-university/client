@@ -10,29 +10,33 @@ import StaffReservationPage from './pages/staff/StaffReservationPage'
 import StaffStockPage from './pages/staff/StaffStockPage'
 import StaffSmsPage from './pages/staff/StaffSmsPage'
 import { golfTheme, healingTheme, honeymoonTheme, trekkingTheme } from './pages/themes/themeDetails'
+import { getAccessToken } from './api/client'
 
 /** Central route entrypoint. Add new top-level routes here as the app grows. */
 export default function Router() {
   const pathname = window.location.pathname.replace(/\/+$/, '')
+  const authenticated = Boolean(getAccessToken())
+  const staffAuthenticated = authenticated && window.sessionStorage.getItem('isStaff') === 'true'
+  const customerAuthenticated = authenticated && window.sessionStorage.getItem('isLoggedIn') === 'true'
 
   if (pathname === '/staff/reservations') {
-    return window.sessionStorage.getItem('isStaff') === 'true' ? <StaffReservationPage /> : <LoginPage />
+    return staffAuthenticated ? <StaffReservationPage /> : <LoginPage />
   }
   if (pathname === '/staff/stock') {
-    return window.sessionStorage.getItem('isStaff') === 'true' ? <StaffStockPage /> : <LoginPage />
+    return staffAuthenticated ? <StaffStockPage /> : <LoginPage />
   }
   if (pathname === '/staff/sms') {
-    return window.sessionStorage.getItem('isStaff') === 'true' ? <StaffSmsPage /> : <LoginPage />
+    return staffAuthenticated ? <StaffSmsPage /> : <LoginPage />
   }
   if (pathname === '/staff') {
-    return window.sessionStorage.getItem('isStaff') === 'true' ? <StaffPage /> : <LoginPage />
+    return staffAuthenticated ? <StaffPage /> : <LoginPage />
   }
 
   if (pathname === '/mypage') {
-    return window.sessionStorage.getItem('isLoggedIn') === 'true' ? <MyPage /> : <LoginPage />
+    return customerAuthenticated ? <MyPage /> : <LoginPage />
   }
   if (pathname === '/booking') {
-    return window.sessionStorage.getItem('isLoggedIn') === 'true' ? <BookingPage /> : <LoginPage reservationRequired />
+    return customerAuthenticated ? <BookingPage /> : <LoginPage reservationRequired />
   }
   if (pathname === '/signup') {
     return <SignupPage />

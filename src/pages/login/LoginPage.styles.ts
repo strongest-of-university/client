@@ -82,6 +82,7 @@ export const SubmitButton = styled.button`
 
   &:hover { background: #39352f; }
   &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+  &:disabled { background: #aaa49b; cursor: wait; }
 `;
 
 export const Message = styled.p`

@@ -1,5 +1,7 @@
 import Header from "../../components/Header";
 import { useState, type FormEvent } from "react";
+import { getErrorMessage } from "../../api/client";
+import { signup } from "../../api/services";
 import * as S from "./SignupPage.styles";
 
 type SignupFields = {
@@ -17,6 +19,7 @@ export default function SignupPage() {
   });
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const passwordsMatch = fields.password.length > 0 && fields.password === fields.passwordConfirmation;
   const phoneValid = /^01[016789]-?\d{3,4}-?\d{4}$/.test(fields.phone.trim());
   const requiredFieldsPresent = [fields.username, fields.name, fields.address].every((value) => value.trim().length > 0);
@@ -29,10 +32,24 @@ export default function SignupPage() {
     setMessage("");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
-    setMessage("회원가입 서비스를 준비 중입니다. 잠시 후 다시 시도해 주세요.");
+    setSubmitting(true);
+    setMessage("");
+    try {
+      await signup({
+        loginId: fields.username.trim(),
+        password: fields.password,
+        name: fields.name.trim(),
+        phoneNumber: fields.phone.trim(),
+        address: fields.address.trim(),
+      });
+      window.location.assign("/login?signup=success");
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -84,7 +101,7 @@ export default function SignupPage() {
             <S.Input id="signup-address" name="address" autoComplete="street-address" placeholder="서울시 강남구 ..." value={fields.address} onChange={(event) => updateField("address", event.target.value)} required />
           </S.Field>
           <S.HelpText>주소와 연락처는 예약 및 출발 확정 안내에 사용됩니다.</S.HelpText>
-          <S.SubmitButton type="submit" disabled={!canSubmit}>가입하고 시작하기</S.SubmitButton>
+          <S.SubmitButton type="submit" disabled={!canSubmit || submitting}>{submitting ? "가입 중..." : "가입하고 시작하기"}</S.SubmitButton>
         </S.Form>
         <S.Message role="status" aria-live="polite">{message}</S.Message>
       </S.Main>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { clearSession, getAccessToken } from "../../api/client";
 import * as S from "./Header.styles";
 
 type HeaderProps = {
@@ -10,7 +11,7 @@ type HeaderProps = {
 export default function Header({ variant = "default", currentPage, onReservationClick }: HeaderProps) {
   const [scrolled, setScrolled] = useState(() => window.scrollY > 24);
   const [loggedIn, setLoggedIn] = useState(
-    () => window.sessionStorage.getItem("isLoggedIn") === "true",
+    () => Boolean(getAccessToken()) && window.sessionStorage.getItem("isLoggedIn") === "true",
   );
 
   useEffect(() => {
@@ -21,8 +22,7 @@ export default function Header({ variant = "default", currentPage, onReservation
   }, [variant]);
 
   function handleLogout() {
-    window.sessionStorage.removeItem("isLoggedIn");
-    window.sessionStorage.removeItem("showTravelHistory");
+    clearSession();
     setLoggedIn(false);
     window.location.assign("/");
   }
