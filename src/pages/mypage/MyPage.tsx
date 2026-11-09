@@ -203,8 +203,7 @@ export default function MyPage() {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDING: "모집 중",
-  BOOKED: "모집 중",
+  PENDING_CONFIRMATION: "모집 중",
   CONFIRMED: "출발 확정",
   CANCELLED: "예약 취소",
   COMPLETED: "여행 완료",
@@ -229,8 +228,10 @@ function formatDate(value?: string, includeYear = false) {
 
 function productName(booking: BookingDto) {
   if (typeof booking.travelProduct === "string") return booking.travelProduct;
-  return booking.travelProduct?.name ?? booking.travelProduct?.title ?? booking.travelProductName ?? "테마 여행";
+  return booking.travelProduct?.name ?? booking.travelProduct?.title ?? booking.travelProductName ?? GIFT_THEME_TITLE[booking.theme ?? ""] ?? "테마 여행";
 }
+
+const GIFT_THEME_TITLE: Record<string, string> = { HONEYMOON: "허니문 낭만 투어", HEALING: "효도 힐링 투어", GOLF: "골프 챌린지 투어", TREKKING: "아웃도어 트레킹 투어" };
 
 function toReservation(booking: BookingDto): Reservation {
   const title = productName(booking);
@@ -241,9 +242,9 @@ function toReservation(booking: BookingDto): Reservation {
   const transport = TRANSPORT_LABEL[booking.selectedTransportation ?? 0] ?? "교통 미정";
   const meal = MEAL_LABEL[booking.selectedMeal ?? 0] ?? "식사 미정";
   const theme = booking.theme ?? (typeof booking.travelProduct === "object" ? booking.travelProduct?.theme : undefined) ?? "";
-  const status = STATUS_LABEL[booking.status] ?? booking.status;
-  const cancelled = booking.status === "CANCELLED";
-  const unavailable = booking.status === "CONFIRMED" || booking.status === "COMPLETED";
+  const status = STATUS_LABEL[booking.bookingStatus] ?? booking.bookingStatus;
+  const cancelled = booking.bookingStatus === "CANCELLED";
+  const unavailable = booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "IN_PROGRESS" || booking.bookingStatus === "COMPLETED";
   return {
     bookingId: booking.bookingId,
     date: formatDate(booking.departureDate),

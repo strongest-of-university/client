@@ -1,5 +1,7 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { FiAlertTriangle } from "react-icons/fi";
+import { getErrorMessage } from "../../api/client";
+import { createTravelProduct, deleteTravelProduct, getTravelProduct, getTravelProducts, type ThemeCode, type TravelProduct } from "../../api/services";
 import Modal from "../../components/Modal";
 import StaffHeader from "./StaffHeader";
 import { loadInventory, type InventoryId } from "./staffInventory";
@@ -28,16 +30,8 @@ const themeInfo: Record<ThemeId, { title: string; category: string; color: strin
   trekking: { title: "아웃도어 트레킹 투어", category: "트레킹", color: "#38546c", code: "TRK", gift: "아웃도어 스카프", inventoryId: "scarf", unit: "장" },
 };
 
-const initialProducts: Product[] = [
-  { id: "1", themeId: "honeymoon", title: "허니문 낭만 투어", code: "P-261107-HNY", start: "2026.11.07", end: "11.12", duration: "5박 6일", price: 1890000, applicants: 2, capacity: 8, status: "모집 중" },
-  { id: "2", themeId: "trekking", title: "아웃도어 트레킹 투어", code: "P-261114-TRK", start: "2026.11.14", end: "11.18", duration: "4박 5일", price: 990000, applicants: 1, capacity: 10, status: "모집 중" },
-  { id: "3", themeId: "golf", title: "골프 챌린지 투어", code: "P-261121-GLF", start: "2026.11.21", end: "11.24", duration: "3박 4일", price: 1590000, applicants: 4, capacity: 10, status: "출발 확정" },
-  { id: "4", themeId: "healing", title: "효도 힐링 투어", code: "P-261205-HLG", start: "2026.12.05", end: "12.09", duration: "4박 5일", price: 1290000, applicants: 2, capacity: 10, status: "모집 중" },
-  { id: "5", themeId: "honeymoon", title: "허니문 낭만 투어", code: "P-261219-HNY", start: "2026.12.19", end: "12.23", duration: "4박 5일", price: 2140000, applicants: 0, capacity: 8, status: "모집 중" },
-  { id: "6", themeId: "trekking", title: "아웃도어 트레킹 투어", code: "P-261128-TRK", start: "2026.11.28", end: "12.01", duration: "3박 4일", price: 890000, applicants: 4, capacity: 10, status: "출발 확정" },
-  { id: "7", themeId: "golf", title: "골프 챌린지 투어", code: "P-261212-GLF", start: "2026.12.12", end: "12.16", duration: "4박 5일", price: 1720000, applicants: 1, capacity: 10, status: "모집 중" },
-  { id: "8", themeId: "healing", title: "효도 힐링 투어", code: "P-270109-HLG", start: "2027.01.09", end: "01.12", duration: "3박 4일", price: 1180000, applicants: 0, capacity: 10, status: "모집 중" },
-];
+const THEME_TO_API: Record<ThemeId, ThemeCode> = { honeymoon: "HONEYMOON", healing: "HEALING", golf: "GOLF", trekking: "TREKKING" };
+const API_TO_THEME: Record<ThemeCode, ThemeId> = { HONEYMOON: "honeymoon", HEALING: "healing", GOLF: "golf", TREKKING: "trekking" };
 
 function toDisplayDate(value: string) {
   return value.replaceAll("-", ".");
@@ -62,24 +56,32 @@ export default function StaffPage() {
   const [mealPrices, setMealPrices] = useState<Record<string, string>>({ "도시락": "0", "현지식 레스토랑": "90000", "스테이크 & 샴페인": "240000" });
   const [transportPrices, setTransportPrices] = useState<Record<string, string>>({ "2인 고급차량": "90000", "10인 승합 고급차량": "0" });
   const [extraPrices, setExtraPrices] = useState({ champagne: "40000", coffee: "7000" });
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [inventory] = useState(loadInventory);
   const [productFilter, setProductFilter] = useState<"all" | ThemeId>("all");
   const [message, setMessage] = useState("");
   const [productMessage, setProductMessage] = useState("");
   const [cancelTarget, setCancelTarget] = useState<Product | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const selectedTheme = themeInfo[themeId];
   const selectedStock = inventory[selectedTheme.inventoryId];
   const capacity = Number(capacityInput) || 0;
   const basePrice = Number(basePriceInput) || 0;
   const stockShortage = Math.max(0, capacity - selectedStock.amount);
-  const productCode = useMemo(() => `P-${startDate.slice(2).replaceAll("-", "")}-${selectedTheme.code}`, [selectedTheme.code, startDate]);
   const filteredProducts = useMemo(
     () => productFilter === "all" ? products : products.filter((product) => product.themeId === productFilter),
     [productFilter, products],
   );
 
-  function registerProduct(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    let active = true;
+    loadProducts()
+      .then((items) => { if (active) setProducts(items); })
+      .catch((error) => { if (active) setProductMessage(getErrorMessage(error)); });
+    return () => { active = false; };
+  }, []);
+
+  async function registerProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!startDate || !endDate || new Date(endDate) <= new Date(startDate)) {
       setMessage("여행 종료일은 시작일보다 늦어야 합니다.");
@@ -90,30 +92,51 @@ export default function StaffPage() {
       return;
     }
 
-    const product: Product = {
-      id: crypto.randomUUID(),
-      themeId,
-      title: selectedTheme.title,
-      code: productCode,
-      start: toDisplayDate(startDate),
-      end: toDisplayDate(endDate).slice(5),
-      duration: durationBetween(startDate, endDate),
-      price: basePrice,
-      applicants: 0,
-      capacity,
-      status: "모집 중",
-    };
-    setProducts((current) => [product, ...current]);
-    setMessage(`${product.title} 상품이 등록되었습니다.`);
-    setProductMessage(`${product.title} 상품이 등록되었습니다.`);
-    setActiveView("list");
+    setSubmitting(true);
+    setMessage("");
+    try {
+      await createTravelProduct({
+        theme: THEME_TO_API[themeId],
+        departureDate: `${startDate}T00:00:00`,
+        returnDate: `${endDate}T00:00:00`,
+        baseServicePrice: basePrice,
+        flightPrice: 0,
+        threeStarHotelPrice: hotel === "3성 호텔" ? 0 : Number(hotelPrices["3성 호텔"]),
+        fourStarHotelPrice: hotel === "4성 호텔" ? 0 : Number(hotelPrices["4성 호텔"]),
+        fiveStarHotelPrice: hotel === "5성 호텔" ? 0 : Number(hotelPrices["5성 호텔"]),
+        lunchPrice: meal === "도시락" ? 0 : Number(mealPrices["도시락"]),
+        localRestaurantPrice: meal === "현지식 레스토랑" ? 0 : Number(mealPrices["현지식 레스토랑"]),
+        steakPrice: meal === "스테이크 & 샴페인" ? 0 : Number(mealPrices["스테이크 & 샴페인"]),
+        luxuryCarPrice: transport === "2인 고급차량" ? 0 : Number(transportPrices["2인 고급차량"]),
+        luxuryVanPrice: transport === "10인 승합 고급차량" ? 0 : Number(transportPrices["10인 승합 고급차량"]),
+        capacity,
+        validTravelPeriod: true,
+      });
+      const nextProducts = await loadProducts();
+      setProducts(nextProducts);
+      setMessage(`${selectedTheme.title} 상품이 등록되었습니다.`);
+      setProductMessage(`${selectedTheme.title} 상품이 등록되었습니다.`);
+      setActiveView("list");
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function cancelProduct() {
+  async function cancelProduct() {
     if (!cancelTarget) return;
-    setProducts((current) => current.map((product) => product.id === cancelTarget.id ? { ...product, status: "판매 취소" } : product));
-    setProductMessage(`${cancelTarget.title} ${cancelTarget.start} 상품이 취소되었습니다.`);
-    setCancelTarget(null);
+    setSubmitting(true);
+    try {
+      await deleteTravelProduct(Number(cancelTarget.id));
+      setProducts(await loadProducts());
+      setProductMessage(`${cancelTarget.title} ${cancelTarget.start} 상품이 취소되었습니다.`);
+      setCancelTarget(null);
+    } catch (error) {
+      setProductMessage(getErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -186,7 +209,7 @@ export default function StaffPage() {
             <S.OptionGroup><S.FieldLabel>추가 옵션</S.FieldLabel><S.FixedOptions><span><strong>샴페인</strong><S.EditablePrice><b>+</b><input aria-label="샴페인 추가 금액" type="number" min="0" step="1000" value={extraPrices.champagne} onChange={(event) => setExtraPrices((current) => ({ ...current, champagne: event.target.value }))} /></S.EditablePrice></span><span><strong>커피</strong><S.EditablePrice><b>+</b><input aria-label="커피 추가 금액" type="number" min="0" step="1000" value={extraPrices.coffee} onChange={(event) => setExtraPrices((current) => ({ ...current, coffee: event.target.value }))} /></S.EditablePrice></span></S.FixedOptions></S.OptionGroup>
 
             <S.Warning><strong>주의</strong> 등록한 상품의 일정과 금액은 수정할 수 없어요. 상품 취소 시 예약자에게 취소 안내가 필요하므로 등록 전 다시 한 번 확인해 주세요.</S.Warning>
-            <S.RegisterButton type="submit" disabled={stockShortage > 0}>상품 등록</S.RegisterButton>
+            <S.RegisterButton type="submit" disabled={stockShortage > 0 || submitting}>{submitting ? "등록 중..." : "상품 등록"}</S.RegisterButton>
             <S.FormMessage role="status">{message}</S.FormMessage>
           </S.Form>
           ) : (
@@ -221,10 +244,42 @@ export default function StaffPage() {
           <>
             <S.CancelProductSummary><strong>{cancelTarget.title}</strong><span>{cancelTarget.start} – {cancelTarget.end} · {cancelTarget.duration}</span><span>신청 {cancelTarget.applicants}명 / 최대 {cancelTarget.capacity}명</span></S.CancelProductSummary>
             <S.CancelProductWarning><FiAlertTriangle aria-hidden="true" /><span><strong>취소 후에는 다시 판매할 수 없어요.</strong><small>신청자가 있다면 예약 취소와 환불 안내 문자를 별도로 발송해야 합니다.</small></span></S.CancelProductWarning>
-            <S.CancelProductActions><S.KeepProductButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.KeepProductButton><S.ConfirmProductCancelButton type="button" onClick={cancelProduct}>상품 취소하기</S.ConfirmProductCancelButton></S.CancelProductActions>
+            <S.CancelProductActions><S.KeepProductButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.KeepProductButton><S.ConfirmProductCancelButton type="button" disabled={submitting} onClick={() => void cancelProduct()}>{submitting ? "취소 중..." : "상품 취소하기"}</S.ConfirmProductCancelButton></S.CancelProductActions>
           </>
         )}
       </Modal>
     </S.Page>
   );
+}
+
+async function loadProducts() {
+  const grouped = await Promise.all((Object.entries(THEME_TO_API) as [ThemeId, ThemeCode][]).map(async ([themeId, code]) => {
+    const products = await getTravelProducts(code);
+    return Promise.all(products.map(async (product) => {
+      const detail = await getTravelProduct(product.travelProductId).catch(() => product);
+      return toProduct({ ...product, ...detail, theme: code }, themeId);
+    }));
+  }));
+  return grouped.flat().sort((a, b) => a.start.localeCompare(b.start));
+}
+
+function toProduct(product: TravelProduct, fallbackTheme: ThemeId): Product {
+  const themeId = product.theme ? API_TO_THEME[product.theme] : fallbackTheme;
+  const start = product.departureDate.slice(0, 10);
+  const end = product.returnDate.slice(0, 10);
+  const status: Product["status"] = product.status === "CANCELLED" ? "판매 취소" : product.status === "CONFIRMED" ? "출발 확정" : "모집 중";
+  const basicPrice = (product.baseServicePrice ?? 0) + (product.flightPrice ?? 0) + (product.threeStarHotelPrice ?? 0) + (product.lunchPrice ?? 0) + (product.luxuryVanPrice ?? 0);
+  return {
+    id: String(product.travelProductId),
+    themeId,
+    title: themeInfo[themeId].title,
+    code: `P-${start.slice(2).replaceAll("-", "")}-${themeInfo[themeId].code}`,
+    start: toDisplayDate(start),
+    end: toDisplayDate(end).slice(5),
+    duration: durationBetween(start, end),
+    price: basicPrice,
+    applicants: product.currentParticipants,
+    capacity: product.capacity,
+    status,
+  };
 }

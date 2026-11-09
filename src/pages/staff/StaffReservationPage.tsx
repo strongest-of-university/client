@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getErrorMessage } from "../../api/client";
+import { getTravelProductBookings, getTravelProducts, type ThemeCode, type TravelProduct, type TravelProductBooking } from "../../api/services";
 import StaffHeader from "./StaffHeader";
 import * as S from "./StaffReservationPage.styles";
 
@@ -18,16 +20,12 @@ type ReservationProduct = {
   customers: Applicant[];
 };
 
-const products: ReservationProduct[] = [
-  { id: "P-261107-HNY", theme: "허니문 낭만 투어", color: "#8b3140", dates: "2026.11.07 – 11.12", duration: "5박 6일", price: "1인 1,890,000원", applicants: 2, capacity: 8, status: "recruiting", customers: [{ name: "최유진", people: 2, phone: "010-****-5810" }] },
-  { id: "P-261114-TRK", theme: "아웃도어 트레킹 투어", color: "#38546c", dates: "2026.11.14 – 11.18", duration: "4박 5일", price: "1인 990,000원", applicants: 1, capacity: 10, status: "recruiting", customers: [{ name: "이서연", people: 1, phone: "010-****-0347" }] },
-  { id: "P-261121-GLF", theme: "골프 챌린지 투어", color: "#2d613f", dates: "2026.11.21 – 11.24", duration: "3박 4일", price: "1인 1,590,000원", applicants: 4, capacity: 10, status: "confirmed", customers: [{ name: "김정묵", people: 2, phone: "010-****-0869" }, { name: "박민수", people: 2, phone: "010-****-7765" }] },
-  { id: "P-261205-HLG", theme: "효도 힐링 투어", color: "#8a7129", dates: "2026.12.05 – 12.09", duration: "4박 5일", price: "1인 1,290,000원", applicants: 2, capacity: 10, status: "recruiting", customers: [{ name: "김정숙", people: 2, phone: "010-****-0869" }] },
-  { id: "P-261219-HNY", theme: "허니문 낭만 투어", color: "#8b3140", dates: "2026.12.19 – 12.23", duration: "4박 5일", price: "1인 2,140,000원", applicants: 0, capacity: 8, status: "recruiting", customers: [] },
-  { id: "P-261128-TRK", theme: "아웃도어 트레킹 투어", color: "#38546c", dates: "2026.11.28 – 12.01", duration: "3박 4일", price: "1인 890,000원", applicants: 4, capacity: 10, status: "confirmed", customers: [{ name: "정하늘", people: 2, phone: "010-****-2290" }, { name: "문채희", people: 2, phone: "010-****-4417" }] },
-  { id: "P-261212-GLF", theme: "골프 챌린지 투어", color: "#2d613f", dates: "2026.12.12 – 12.16", duration: "4박 5일", price: "1인 1,720,000원", applicants: 1, capacity: 10, status: "recruiting", customers: [{ name: "한지민", people: 1, phone: "010-****-3021" }] },
-  { id: "P-270109-HLG", theme: "효도 힐링 투어", color: "#8a7129", dates: "2027.01.09 – 01.12", duration: "3박 4일", price: "1인 1,180,000원", applicants: 0, capacity: 10, status: "recruiting", customers: [] },
-];
+const THEME_INFO: Record<ThemeCode, { title: string; color: string; code: string }> = {
+  HONEYMOON: { title: "허니문 낭만 투어", color: "#8b3140", code: "HNY" },
+  HEALING: { title: "효도 힐링 투어", color: "#8a7129", code: "HLG" },
+  GOLF: { title: "골프 챌린지 투어", color: "#2d613f", code: "GLF" },
+  TREKKING: { title: "아웃도어 트레킹 투어", color: "#38546c", code: "TRK" },
+};
 
 const filters: { id: Filter; label: string }[] = [
   { id: "all", label: "전체" },
@@ -43,7 +41,21 @@ function statusLabel(status: Status) {
 
 export default function StaffReservationPage() {
   const [filter, setFilter] = useState<Filter>("all");
-  const visibleProducts = useMemo(() => filter === "all" ? products : products.filter((product) => product.status === filter), [filter]);
+  const [products, setProducts] = useState<ReservationProduct[]>([]);
+  const [message, setMessage] = useState("예약 현황을 불러오는 중입니다.");
+  const visibleProducts = useMemo(() => filter === "all" ? products : products.filter((product) => product.status === filter), [filter, products]);
+
+  useEffect(() => {
+    let active = true;
+    loadReservationProducts()
+      .then((items) => {
+        if (!active) return;
+        setProducts(items);
+        setMessage("");
+      })
+      .catch((error) => { if (active) setMessage(getErrorMessage(error)); });
+    return () => { active = false; };
+  }, []);
 
   return (
     <S.Page>
@@ -83,8 +95,47 @@ export default function StaffReservationPage() {
             );
           })}
         </S.Grid>
-        {visibleProducts.length === 0 && <S.Empty>해당 상태의 예약 상품이 없습니다.</S.Empty>}
+        {message && <S.Empty role="status">{message}</S.Empty>}
+        {!message && visibleProducts.length === 0 && <S.Empty>해당 상태의 예약 상품이 없습니다.</S.Empty>}
       </S.Main>
     </S.Page>
   );
+}
+
+async function loadReservationProducts() {
+  const groups = await Promise.all((Object.keys(THEME_INFO) as ThemeCode[]).map(async (theme) => {
+    const products = await getTravelProducts(theme);
+    return Promise.all(products.map(async (product) => {
+      const page = await getTravelProductBookings(product.travelProductId);
+      return toReservationProduct(product, theme, page.bookings ?? []);
+    }));
+  }));
+  return groups.flat().sort((a, b) => a.dates.localeCompare(b.dates));
+}
+
+function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings: TravelProductBooking[]): ReservationProduct {
+  const info = THEME_INFO[theme];
+  const start = product.departureDate.slice(0, 10);
+  const end = product.returnDate.slice(0, 10);
+  const nights = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86_400_000));
+  const status: Status = product.status === "CONFIRMED" ? "confirmed" : product.status === "CANCELLED" ? "paused" : product.status === "CLOSED" || product.status === "COMPLETED" ? "closed" : "recruiting";
+  const activeBookings = bookings.filter((booking) => booking.bookingStatus !== "CANCELLED");
+  const sample = activeBookings[0];
+  const perPerson = sample ? Math.round(sample.paidAmount / Math.max(1, sample.numberOfPeople)) : 0;
+  return {
+    id: `P-${start.slice(2).replaceAll("-", "")}-${info.code}`,
+    theme: info.title,
+    color: info.color,
+    dates: `${start.replaceAll("-", ".")} – ${end.slice(5).replaceAll("-", ".")}`,
+    duration: `${nights}박 ${nights + 1}일`,
+    price: perPerson ? `1인 ${perPerson.toLocaleString("ko-KR")}원` : "결제 내역 없음",
+    applicants: product.currentParticipants,
+    capacity: product.capacity,
+    status,
+    customers: activeBookings.map((booking) => ({ name: booking.userName, people: booking.numberOfPeople, phone: maskPhone(booking.phoneNumber) })),
+  };
+}
+
+function maskPhone(phone: string) {
+  return phone.replace(/(01\d)-?\d{3,4}-?(\d{4})/, "$1-****-$2");
 }

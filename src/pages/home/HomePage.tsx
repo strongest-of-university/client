@@ -1,11 +1,13 @@
 import Header from "../../components/Header";
 import { getAccessToken } from "../../api/client";
+import { getMyBookings, getMyProfile, type BookingDto } from "../../api/services";
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
 import { notices } from "../notices/notices";
 import Footer from "../../components/Footer";
 import Modal from "../../components/Modal";
-import { FiMic, FiMousePointer } from "react-icons/fi";
+import { FiMic } from "react-icons/fi";
+import { LuMousePointer2 } from "react-icons/lu";
 
 const slides = [
   "/images/lake-aerial.jpg",
@@ -28,54 +30,11 @@ const themes = [
   ["Trekking", "산과 길을 걷는 아웃도어 어드벤처", "/images/trekking.jpg"],
 ];
 
-const reservations = [
-  {
-    title: "골프 챌린지 투어",
-    details: "2026.11.21 – 11.24 · 프리미엄 · 2명 · 4,180,000원",
-    status: "출발 확정",
-    confirmed: true,
-  },
-  {
-    title: "효도 힐링 투어",
-    details: "2026.12.05 – 12.09 · 그랜드 · 2명 · 3,078,000원",
-    status: "모집 중",
-    confirmed: false,
-  },
-];
-
-const travelHistory = [
-  {
-    year: "2026년",
-    trips: [
-      {
-        date: "05월 10일 (일)",
-        title: "골프 챌린지 투어",
-        period: "2026.05.10 – 05.13 (3박 4일)",
-        grade: "프리미엄",
-        price: "2,340,000원",
-      },
-    ],
-  },
-  {
-    year: "2025년",
-    trips: [
-      {
-        date: "10월 02일 (목)",
-        title: "효도 힐링 투어",
-        period: "2025.10.02 – 10.06 (4박 5일)",
-        grade: "그랜드",
-        price: "1,560,000원",
-      },
-      {
-        date: "06월 21일 (토)",
-        title: "아웃도어 트레킹 투어",
-        period: "2025.06.21 – 06.23 (2박 3일)",
-        grade: "클래식",
-        price: "980,000원",
-      },
-    ],
-  },
-];
+type HomeReservation = { title: string; details: string; status: string; confirmed: boolean };
+type TravelHistoryGroup = {
+  year: string;
+  trips: { date: string; title: string; period: string; grade: string; price: string }[];
+};
 
 export default function HomePage() {
   const [slide, setSlide] = useState(0);
@@ -86,6 +45,9 @@ export default function HomePage() {
     () => window.sessionStorage.getItem("showReservationOptions") === "true",
   );
   const [reservationMessage, setReservationMessage] = useState("");
+  const [reservationItems, setReservationItems] = useState<HomeReservation[]>([]);
+  const [historyItems, setHistoryItems] = useState<TravelHistoryGroup[]>([]);
+  const [profileName, setProfileName] = useState("고객");
   const isLoggedIn = Boolean(getAccessToken()) && window.sessionStorage.getItem("isLoggedIn") === "true";
   const themeStackRef = useRef<HTMLElement>(null);
 
@@ -96,6 +58,23 @@ export default function HomePage() {
   useEffect(() => {
     if (reservationOptionsOpen) window.sessionStorage.removeItem("showReservationOptions");
   }, [reservationOptionsOpen]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let active = true;
+    Promise.all([getMyBookings(), getMyProfile()])
+      .then(([bookings, profile]) => {
+        if (!active) return;
+        setProfileName(profile.name);
+        setReservationItems(bookings
+          .filter((booking) => booking.bookingStatus !== "COMPLETED" && booking.bookingStatus !== "CANCELLED")
+          .slice(0, 2)
+          .map(toHomeReservation));
+        setHistoryItems(toTravelHistory(bookings));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [isLoggedIn]);
 
   function openReservationOptions() {
     setReservationMessage("");
@@ -217,7 +196,7 @@ export default function HomePage() {
           </S.SectionHeading>
           {isLoggedIn ? (
             <S.ReservationList>
-              {reservations.map((reservation) => (
+              {reservationItems.map((reservation) => (
                 <S.ReservationRow key={reservation.title}>
                   <S.ReservationSummary>
                     <S.ReservationTitle>{reservation.title}</S.ReservationTitle>
@@ -226,6 +205,7 @@ export default function HomePage() {
                   <S.StatusBadge $confirmed={reservation.confirmed}>{reservation.status}</S.StatusBadge>
                 </S.ReservationRow>
               ))}
+              {reservationItems.length === 0 && <S.GuestText>진행 중인 예약이 없습니다.</S.GuestText>}
             </S.ReservationList>
           ) : (
             <S.GuestCard>
@@ -264,14 +244,14 @@ export default function HomePage() {
       <Footer />
       <Modal
         open={historyOpen}
-        title="다시 오셨네요, 김정묵 님"
+        title={`다시 오셨네요, ${profileName} 님`}
         onClose={() => setHistoryOpen(false)}
         size="large"
         tone="warm"
       >
         <S.HistorySubtitle>이전 여행 · 최근순</S.HistorySubtitle>
         <S.HistoryList>
-          {travelHistory.map(({ year, trips }) => (
+          {historyItems.map(({ year, trips }) => (
             <S.HistoryYear key={year}>
               <S.HistoryYearTitle>{year}</S.HistoryYearTitle>
               <S.TripList>
@@ -292,6 +272,7 @@ export default function HomePage() {
             </S.HistoryYear>
           ))}
         </S.HistoryList>
+        {historyItems.length === 0 && <S.HistorySubtitle>완료된 이전 여행이 없습니다.</S.HistorySubtitle>}
         <S.MoreTripsButton type="button" onClick={() => setHistoryOpen(false)}>
           지난 여행 더 보러 가기 <span aria-hidden="true">→</span>
         </S.MoreTripsButton>
@@ -313,7 +294,7 @@ export default function HomePage() {
             <span>말로 원하는 여행을 설명하면 필요한 정보를 되물어 채워 드려요</span>
           </S.ReservationOption>
           <S.ReservationOption type="button" onClick={selectDirectReservation}>
-            <FiMousePointer aria-hidden="true" />
+            <LuMousePointer2 className="direct-pointer" aria-hidden="true" />
             <strong>직접 선택</strong>
             <span>테마, 등급, 구성을 화면에서 하나씩 골라요</span>
           </S.ReservationOption>
@@ -324,4 +305,45 @@ export default function HomePage() {
       </Modal>
     </S.HomePage>
   );
+}
+
+const HOME_THEME_TITLE: Record<string, string> = {
+  HONEYMOON: "허니문 낭만 투어",
+  HEALING: "효도 힐링 투어",
+  GOLF: "골프 챌린지 투어",
+  TREKKING: "아웃도어 트레킹 투어",
+};
+
+const HOME_LEVEL_LABEL: Record<string, string> = { CLASSIC: "클래식", GRAND: "그랜드", PREMIUM: "프리미엄" };
+
+function shortDate(value?: string) {
+  return value ? value.slice(0, 10).replaceAll("-", ".") : "일정 미정";
+}
+
+function toHomeReservation(booking: BookingDto) {
+  const confirmed = booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "IN_PROGRESS";
+  return {
+    title: HOME_THEME_TITLE[booking.theme ?? ""] ?? "테마 여행",
+    details: `${shortDate(booking.departureDate)} – ${shortDate(booking.returnDate).slice(5)} · ${HOME_LEVEL_LABEL[booking.tourLevel ?? ""] ?? booking.tourLevel ?? "등급 미정"} · ${booking.numberOfPeople ?? 0}명 · ${(booking.totalPrice ?? 0).toLocaleString("ko-KR")}원`,
+    status: confirmed ? "출발 확정" : "모집 중",
+    confirmed,
+  };
+}
+
+function toTravelHistory(bookings: BookingDto[]): TravelHistoryGroup[] {
+  const grouped = new Map<string, TravelHistoryGroup["trips"]>();
+  bookings.filter((booking) => booking.bookingStatus === "COMPLETED").forEach((booking) => {
+    const departure = booking.departureDate?.slice(0, 10) ?? "";
+    const year = `${departure.slice(0, 4)}년`;
+    const trips = grouped.get(year) ?? [];
+    trips.push({
+      date: departure ? `${departure.slice(5, 7)}월 ${departure.slice(8, 10)}일` : "일정 미정",
+      title: HOME_THEME_TITLE[booking.theme ?? ""] ?? "테마 여행",
+      period: `${shortDate(booking.departureDate)} – ${shortDate(booking.returnDate).slice(5)}`,
+      grade: HOME_LEVEL_LABEL[booking.tourLevel ?? ""] ?? booking.tourLevel ?? "등급 미정",
+      price: `${(booking.totalPrice ?? 0).toLocaleString("ko-KR")}원`,
+    });
+    grouped.set(year, trips);
+  });
+  return [...grouped.entries()].map(([year, trips]) => ({ year, trips }));
 }

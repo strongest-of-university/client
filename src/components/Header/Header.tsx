@@ -27,17 +27,26 @@ export default function Header({ variant = "default", currentPage, onReservation
     window.location.assign("/");
   }
 
+  function handleReservation() {
+    if (onReservationClick) {
+      onReservationClick();
+      return;
+    }
+    window.sessionStorage.setItem("showReservationOptions", "true");
+    window.location.assign("/");
+  }
+
   return (
     <S.Header $variant={variant} $scrolled={scrolled}>
       <S.Brand href="/" $variant={variant}>미스터 월드</S.Brand>
       <S.Nav aria-label="주 메뉴" $variant={variant}>
         <S.NavLink $variant={variant} href={variant === "home" ? "#themes" : "/#themes"} aria-current={currentPage === "theme" ? "page" : undefined}>THEME</S.NavLink>
-        {loggedIn && onReservationClick ? (
-          <S.NavButton $variant={variant} type="button" onClick={onReservationClick}>RESERVATION</S.NavButton>
+        {loggedIn ? (
+          <S.NavButton $variant={variant} type="button" onClick={handleReservation}>RESERVATION</S.NavButton>
         ) : (
           <S.NavLink
             $variant={variant}
-            href={loggedIn ? "/#reservation" : "/reservation"}
+            href="/reservation"
             aria-current={currentPage === "reservation" ? "page" : undefined}
           >
             RESERVATION

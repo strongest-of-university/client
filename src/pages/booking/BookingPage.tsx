@@ -1,5 +1,7 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
+import { getErrorMessage } from "../../api/client";
+import { createBooking, getTravelProducts, previewBooking, type BookingPreview, type BookingSelection, type ThemeCode, type TravelProduct } from "../../api/services";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import * as S from "./BookingPage.styles";
@@ -20,7 +22,7 @@ type Theme = {
   color: string;
   Icon: typeof FiHeart;
   transport: string;
-  schedules: { id: string; dates: string; duration: string }[];
+  schedules: { id: string; dates: string; duration: string; travelProductId?: number; status?: TravelProduct["status"] }[];
   grades: Grade[];
 };
 
@@ -124,6 +126,22 @@ const drinkChoices = [
   { value: "커피", price: 7000, priceLabel: "+7,000원" },
 ];
 
+const THEME_CODES: Record<string, ThemeCode> = {
+  honeymoon: "HONEYMOON",
+  healing: "HEALING",
+  golf: "GOLF",
+  trekking: "TREKKING",
+};
+
+const PRODUCT_STATUS_LABEL: Record<TravelProduct["status"], string> = {
+  RECRUITING: "모집 중",
+  CONFIRMED: "출발 확정",
+  CLOSED: "마감",
+  IN_PROGRESS: "여행 중",
+  COMPLETED: "여행 완료",
+  CANCELLED: "판매 취소",
+};
+
 function getChoicePrice(choices: { value: string; price: number }[], value?: string) {
   return choices.find((choice) => choice.value === value)?.price ?? 0;
 }
@@ -149,13 +167,25 @@ export default function BookingPage() {
   const [cardOwner, setCardOwner] = useState("");
   const [installment, setInstallment] = useState("일시불");
   const [installmentOpen, setInstallmentOpen] = useState(false);
-  const paymentTimerRef = useRef<number | null>(null);
+  const [productsByTheme, setProductsByTheme] = useState<Partial<Record<ThemeCode, TravelProduct[]>>>({});
+  const [previewState, setPreviewState] = useState<{ key: string; data: BookingPreview } | null>(null);
 
-  const theme = themes.find((item) => item.id === themeId);
+  const availableThemes = useMemo(() => themes.map((item) => {
+    const products = productsByTheme[THEME_CODES[item.id]];
+    if (!products) return item;
+    return {
+      ...item,
+      schedules: products
+        .filter((product) => product.status !== "CANCELLED" && product.status !== "COMPLETED")
+        .map(productToSchedule),
+    };
+  }), [productsByTheme]);
+
+  const theme = availableThemes.find((item) => item.id === themeId);
   const schedule = theme?.schedules.find((item) => item.id === scheduleId);
   const grade = theme?.grades.find((item) => item.id === gradeId);
   const allAgreed = agreements.every(Boolean);
-  const isComplete = Boolean(theme && schedule && grade && allAgreed);
+  const isComplete = Boolean(theme && schedule?.travelProductId && grade && allAgreed);
   const selectedHotel = hotelOption || grade?.hotel;
   const selectedTransport = transportOption || theme?.transport;
   const selectedMeal = mealOption || grade?.meal;
@@ -172,17 +202,71 @@ export default function BookingPage() {
       + drinkOptions.reduce((sum, option) => sum + getChoicePrice(drinkChoices, option), 0)
     : 0;
   const price = grade ? (grade.price + optionAdjustment) * people : 0;
-  const discount = Math.round(price * 0.05);
-  const finalPrice = price - discount;
   const formattedCardNumber = cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ");
   const paymentReady = cardNumber.length === 16
     && /^\d{2} \/ \d{2}$/.test(expiry)
     && securityCode.length === 3
     && cardOwner.trim().length > 0;
 
-  useEffect(() => () => {
-    if (paymentTimerRef.current !== null) window.clearTimeout(paymentTimerRef.current);
+  const bookingSelection = useMemo<BookingSelection | null>(() => {
+    if (!schedule?.travelProductId || !grade || !selectedHotel || !selectedTransport || !selectedMeal) return null;
+    return {
+      travelProductId: schedule.travelProductId,
+      tourLevel: grade.id.toUpperCase() as BookingSelection["tourLevel"],
+      numberOfPeople: people,
+      selectedHotel: Number(selectedHotel.match(/\d/)?.[0] ?? 0),
+      selectedTransportation: selectedTransport.startsWith("2인") ? 1 : 2,
+      selectedMeal: selectedMeal === "도시락" ? 1 : selectedMeal === "현지식 레스토랑" ? 2 : 3,
+      selectedDrink: drinkOptions.length === 0 ? 0 : drinkOptions.length === 2 ? 3 : drinkOptions[0] === "샴페인" ? 1 : 2,
+    };
+  }, [drinkOptions, grade, people, schedule, selectedHotel, selectedMeal, selectedTransport]);
+  const selectionKey = bookingSelection ? JSON.stringify(bookingSelection) : "";
+  const bookingPreview = previewState?.key === selectionKey ? previewState.data : null;
+  const displayedOriginalPrice = bookingPreview?.originalPrice ?? price;
+  const discount = bookingPreview?.discountAmount ?? Math.round(price * 0.05);
+  const finalPrice = bookingPreview?.totalPrice ?? price - discount;
+
+  useEffect(() => {
+    let active = true;
+    Promise.all((Object.values(THEME_CODES) as ThemeCode[]).map(async (code) => [code, await getTravelProducts(code)] as const))
+      .then((entries) => {
+        if (!active) return;
+        const next = Object.fromEntries(entries) as Record<ThemeCode, TravelProduct[]>;
+        setProductsByTheme(next);
+        const savedId = Number(window.sessionStorage.getItem("selectedTravelProductId"));
+        if (savedId) {
+          const matched = entries.find(([, products]) => products.some((product) => product.travelProductId === savedId));
+          if (matched) {
+            const selectedThemeId = Object.entries(THEME_CODES).find(([, code]) => code === matched[0])?.[0] ?? "";
+            setThemeId(selectedThemeId);
+            setScheduleId(String(savedId));
+            window.sessionStorage.removeItem("selectedTravelProductId");
+          }
+        }
+      })
+      .catch((error) => {
+        if (active) setSubmitMessage(`상품 일정을 불러오지 못했습니다. ${getErrorMessage(error)}`);
+      });
+    return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!bookingSelection) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      previewBooking(bookingSelection)
+        .then((preview) => {
+          if (active) setPreviewState({ key: selectionKey, data: preview });
+        })
+        .catch((error) => {
+          if (active) setSubmitMessage(getErrorMessage(error));
+        });
+    }, 250);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [bookingSelection, selectionKey]);
 
   const currentStep = useMemo(() => {
     if (!theme) return 1;
@@ -225,16 +309,20 @@ export default function BookingPage() {
     setAgreements([nextValue, nextValue, nextValue]);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!isComplete) return;
+    if (!isComplete || !bookingSelection) return;
     setSubmitMessage("");
     setPaymentLoading(true);
-    paymentTimerRef.current = window.setTimeout(() => {
+    try {
+      const preview = await previewBooking(bookingSelection);
+      setPreviewState({ key: selectionKey, data: preview });
       setPaymentLoading(false);
       setPaymentOpen(true);
-      paymentTimerRef.current = null;
-    }, 1000);
+    } catch (error) {
+      setPaymentLoading(false);
+      setSubmitMessage(getErrorMessage(error));
+    }
   }
 
   function updateCardNumber(value: string) {
@@ -246,15 +334,19 @@ export default function BookingPage() {
     setExpiry(digits.length > 2 ? `${digits.slice(0, 2)} / ${digits.slice(2)}` : digits);
   }
 
-  function completePayment() {
-    if (!paymentReady) return;
+  async function completePayment() {
+    if (!paymentReady || !bookingSelection) return;
     setPaymentOpen(false);
     setPaymentProcessing(true);
-    paymentTimerRef.current = window.setTimeout(() => {
+    try {
+      await createBooking(bookingSelection, cardNumber, bookingPreview ?? undefined);
       setPaymentProcessing(false);
       setPaymentCompleted(true);
-      paymentTimerRef.current = null;
-    }, 1200);
+    } catch (error) {
+      setPaymentProcessing(false);
+      setPaymentOpen(true);
+      setSubmitMessage(getErrorMessage(error));
+    }
   }
 
   return (
@@ -275,7 +367,7 @@ export default function BookingPage() {
             <S.SectionTitle>1. 어떤 여행을 찾으세요?</S.SectionTitle>
             <S.SectionDescription>테마별 기본 서비스와 기념품이 함께 제공됩니다.</S.SectionDescription>
             <S.ThemeGrid>
-              {themes.map((item) => {
+              {availableThemes.map((item) => {
                 const Icon = item.Icon;
                 return (
                   <S.ThemeCard
@@ -309,7 +401,7 @@ export default function BookingPage() {
                     aria-pressed={scheduleId === item.id}
                   >
                     <strong>{item.dates}</strong>
-                    <span>{item.duration} · 모집 중</span>
+                    <span>{item.duration} · {item.status ? PRODUCT_STATUS_LABEL[item.status] : "모집 중"}</span>
                   </S.ChoiceCard>
                 ))}
               </S.ChoiceGrid>
@@ -437,7 +529,7 @@ export default function BookingPage() {
             <div><dt>신청 인원</dt><dd>{people}명</dd></div>
           </S.SummaryList>
           <S.PriceList>
-            <div><dt>여행·옵션 금액</dt><dd>{price ? `${currency.format(price)}원` : "–"}</dd></div>
+            <div><dt>여행·옵션 금액</dt><dd>{displayedOriginalPrice ? `${currency.format(displayedOriginalPrice)}원` : "–"}</dd></div>
             <div><dt>단골 고객 5% 할인</dt><dd>{discount ? `−${currency.format(discount)}원` : "–"}</dd></div>
             <div><dt>최종 결제 예정 금액</dt><dd>{finalPrice ? `${currency.format(finalPrice)}원` : "–"}</dd></div>
           </S.PriceList>
@@ -486,6 +578,7 @@ export default function BookingPage() {
         tone="warm"
       >
         <S.PaymentDescription>카드 정보를 입력해 주세요. 결제가 끝나면 예약 신청이 완료돼요.</S.PaymentDescription>
+        <S.SubmitMessage role="alert" aria-live="polite">{submitMessage}</S.SubmitMessage>
         <S.PaymentFields>
           <S.PaymentField>
             <label htmlFor="manual-payment-number">카드 번호</label>
@@ -553,9 +646,27 @@ export default function BookingPage() {
         </S.PaymentTotal>
         <S.PaymentActions>
           <S.PreviousButton type="button" onClick={() => setPaymentOpen(false)}>이전</S.PreviousButton>
-          <S.ConfirmPaymentButton type="button" disabled={!paymentReady} onClick={completePayment}>결제하고 예약하기</S.ConfirmPaymentButton>
+          <S.ConfirmPaymentButton type="button" disabled={!paymentReady} onClick={() => void completePayment()}>결제하고 예약하기</S.ConfirmPaymentButton>
         </S.PaymentActions>
       </Modal>
     </S.Page>
   );
+}
+
+function productToSchedule(product: TravelProduct) {
+  const departure = new Date(product.departureDate);
+  const returned = new Date(product.returnDate);
+  const nights = Math.max(1, Math.round((returned.getTime() - departure.getTime()) / 86_400_000));
+  const date = (value: Date, year = false) => new Intl.DateTimeFormat("ko-KR", {
+    ...(year ? { year: "numeric" as const } : {}),
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value).replaceAll(". ", ".").replace(/\.$/, "");
+  return {
+    id: String(product.travelProductId),
+    travelProductId: product.travelProductId,
+    dates: `${date(departure, true)} – ${date(returned)}`,
+    duration: `${nights}박 ${nights + 1}일`,
+    status: product.status,
+  };
 }

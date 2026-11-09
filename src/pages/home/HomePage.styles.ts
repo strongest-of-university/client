@@ -256,6 +256,10 @@ export const ReservationOption = styled.button`
     stroke-width: 1.8;
   }
 
+  .direct-pointer {
+    transform: scaleX(-1);
+  }
+
   strong {
     margin-bottom: 6px;
     font-size: 21px;
