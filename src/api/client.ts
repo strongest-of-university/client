@@ -47,7 +47,7 @@ function readMessage(body: unknown, fallback: string) {
   return fallback;
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(path: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
   const headers = new Headers(init.headers);
   const token = getAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -55,7 +55,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
 
   let response: Response;
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, signal: controller.signal });
   } catch (error) {

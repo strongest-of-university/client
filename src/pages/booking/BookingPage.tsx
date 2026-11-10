@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
+import type { VoiceDraft } from "../../api/voice";
 import { createBooking, getTravelProducts, previewBooking, type BookingPreview, type BookingSelection, type ThemeCode, type TravelProduct } from "../../api/services";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
@@ -22,7 +23,7 @@ type Theme = {
   color: string;
   Icon: typeof FiHeart;
   transport: string;
-  schedules: { id: string; dates: string; duration: string; travelProductId?: number; status?: TravelProduct["status"] }[];
+  schedules: { id: string; dates: string; duration: string; travelProductId?: number; status?: TravelProduct["status"]; remainingCapacity?: number }[];
   grades: Grade[];
 };
 
@@ -106,6 +107,34 @@ const steps = [
   ["신청", "3명부터 출발 확정"],
 ];
 
+const agreementDetails = [
+  {
+    title: "개인정보 수집·이용 동의",
+    sections: [
+      ["수집·이용 목적", "미스터월드 서비스를 운영하는 최강팀은 회원 확인, 여행 예약과 결제 처리, 예약 내역 조회 및 여행 관련 안내를 위해 정보를 이용합니다."],
+      ["수집 항목", "회원가입 시 입력한 아이디, 이름, 휴대폰 번호, 주소와 예약 시 선택한 일정·인원·여행 옵션 및 결제에 필요한 카드 정보를 처리합니다. 음성 예약을 이용할 때는 이용자가 제출한 음성과 입력 내용이 예약 조건 확인에 사용됩니다."],
+      ["보유·이용 기간", "개인정보의 구체적인 보유 기간과 삭제 기준은 서비스 운영 정책을 확정할 때 정합니다."],
+      ["동의 거부", "개인정보 수집·이용에 동의하지 않을 수 있으며, 필수 정보에 동의하지 않으면 예약을 진행할 수 없습니다."],
+    ],
+  },
+  {
+    title: "여행 약관 동의",
+    sections: [
+      ["예약 신청", "고객은 여행 테마, 출발 일정, 인원과 여행 구성을 확인하고 결제하여 예약을 신청합니다. 예약 내역은 마이페이지에서 확인할 수 있습니다."],
+      ["여행 일정과 구성", "여행 일정 및 호텔, 교통, 식사 등은 고객이 예약 화면에서 선택한 상품과 옵션을 따릅니다. 예약 전 일정과 최종 금액을 확인해 주세요."],
+      ["출발 확정", "상품별 신청 인원이 출발 기준을 충족하면 출발이 확정됩니다. 현재 서비스의 안내 기준은 3명 이상입니다."],
+    ],
+  },
+  {
+    title: "취소 및 위약금 규정 동의",
+    sections: [
+      ["취소 신청", "예약 취소 가능 여부는 마이페이지의 예약 상태에 따라 확인할 수 있습니다. 출발이 확정된 상품은 현재 화면에서 취소할 수 없습니다."],
+      ["위약금과 환불", "취소할 때 표시되는 결제 금액, 위약금과 환불 예정 금액을 확인한 후 취소를 진행해 주세요. 환불 처리 시점은 결제 수단에 따라 달라질 수 있습니다."],
+      ["규정 안내", "구체적인 취소 기한과 위약금 기준은 서비스 운영 정책 및 서버 처리 기준을 확인해 확정합니다."],
+    ],
+  },
+] as const;
+
 const currency = new Intl.NumberFormat("ko-KR");
 const hotelChoices = [
   { value: "3성급 호텔", price: 0, priceLabel: "0원" },
@@ -156,6 +185,7 @@ export default function BookingPage() {
   const [mealOption, setMealOption] = useState("");
   const [drinkOptions, setDrinkOptions] = useState<string[]>([]);
   const [agreements, setAgreements] = useState([false, false, false]);
+  const [openAgreement, setOpenAgreement] = useState<number | null>(null);
   const [submitMessage, setSubmitMessage] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
@@ -185,7 +215,9 @@ export default function BookingPage() {
   const schedule = theme?.schedules.find((item) => item.id === scheduleId);
   const grade = theme?.grades.find((item) => item.id === gradeId);
   const allAgreed = agreements.every(Boolean);
-  const isComplete = Boolean(theme && schedule?.travelProductId && grade && allAgreed);
+  const maxPeople = typeof schedule?.remainingCapacity === "number" ? Math.min(10, Math.max(0, schedule.remainingCapacity)) : 0;
+  const hasCapacity = maxPeople > 0 && people <= maxPeople && (schedule?.status === "RECRUITING" || schedule?.status === "CONFIRMED");
+  const isComplete = Boolean(theme && schedule?.travelProductId && hasCapacity && grade && allAgreed);
   const selectedHotel = hotelOption || grade?.hotel;
   const selectedTransport = transportOption || theme?.transport;
   const selectedMeal = mealOption || grade?.meal;
@@ -209,7 +241,7 @@ export default function BookingPage() {
     && cardOwner.trim().length > 0;
 
   const bookingSelection = useMemo<BookingSelection | null>(() => {
-    if (!schedule?.travelProductId || !grade || !selectedHotel || !selectedTransport || !selectedMeal) return null;
+    if (!schedule?.travelProductId || !hasCapacity || !grade || !selectedHotel || !selectedTransport || !selectedMeal) return null;
     return {
       travelProductId: schedule.travelProductId,
       tourLevel: grade.id.toUpperCase() as BookingSelection["tourLevel"],
@@ -219,7 +251,7 @@ export default function BookingPage() {
       selectedMeal: selectedMeal === "도시락" ? 1 : selectedMeal === "현지식 레스토랑" ? 2 : 3,
       selectedDrink: drinkOptions.length === 0 ? 0 : drinkOptions.length === 2 ? 3 : drinkOptions[0] === "샴페인" ? 1 : 2,
     };
-  }, [drinkOptions, grade, people, schedule, selectedHotel, selectedMeal, selectedTransport]);
+  }, [drinkOptions, grade, hasCapacity, people, schedule, selectedHotel, selectedMeal, selectedTransport]);
   const selectionKey = bookingSelection ? JSON.stringify(bookingSelection) : "";
   const bookingPreview = previewState?.key === selectionKey ? previewState.data : null;
   const displayedOriginalPrice = bookingPreview?.originalPrice ?? price;
@@ -240,6 +272,26 @@ export default function BookingPage() {
             const selectedThemeId = Object.entries(THEME_CODES).find(([, code]) => code === matched[0])?.[0] ?? "";
             setThemeId(selectedThemeId);
             setScheduleId(String(savedId));
+            const selectedProduct = matched[1].find((product) => product.travelProductId === savedId);
+            const capacity = Math.max(0, Math.min(10, selectedProduct?.remainingCapacity ?? 0));
+            if (capacity > 0) setPeople((current) => Math.min(current, capacity));
+            const savedDraft = window.sessionStorage.getItem("voiceBookingDraft");
+            if (savedDraft) {
+              try {
+                const draft = JSON.parse(savedDraft) as VoiceDraft;
+                const selectedTheme = themes.find((item) => item.id === selectedThemeId);
+                const matchedGrade = selectedTheme?.grades.find((item) => item.id.toUpperCase() === draft.tourLevel && !item.unavailable);
+                if (matchedGrade) setGradeId(matchedGrade.id);
+                if (Number.isInteger(draft.numberOfPeople) && draft.numberOfPeople! >= 1 && capacity > 0) setPeople(Math.min(draft.numberOfPeople!, capacity));
+                const restricted = selectedThemeId === "honeymoon" || selectedThemeId === "healing";
+                if (draft.selectedHotel && draft.selectedHotel >= (restricted ? 4 : 3) && draft.selectedHotel <= 5) setHotelOption(`${draft.selectedHotel}성급 호텔`);
+                if (draft.selectedTransportation === 1 || draft.selectedTransportation === 2) setTransportOption(transportChoices[draft.selectedTransportation - 1].value);
+                if (draft.selectedMeal && draft.selectedMeal >= (restricted ? 2 : 1) && draft.selectedMeal <= 3) setMealOption(mealChoices[draft.selectedMeal - 1].value);
+                if (draft.selectedDrink === 1 || draft.selectedDrink === 3) setDrinkOptions(draft.selectedDrink === 3 ? ["샴페인", "커피"] : ["샴페인"]);
+                else if (draft.selectedDrink === 2) setDrinkOptions(["커피"]);
+              } catch { /* Invalid saved draft is ignored. */ }
+              window.sessionStorage.removeItem("voiceBookingDraft");
+            }
             window.sessionStorage.removeItem("selectedTravelProductId");
           }
         }
@@ -397,11 +449,15 @@ export default function BookingPage() {
                     key={item.id}
                     type="button"
                     $selected={scheduleId === item.id}
-                    onClick={() => setScheduleId(item.id)}
+                    disabled={!item.travelProductId || !Number.isFinite(item.remainingCapacity) || (item.remainingCapacity ?? 0) <= 0 || (item.status !== "RECRUITING" && item.status !== "CONFIRMED")}
+                    onClick={() => {
+                      setScheduleId(item.id);
+                      setPeople((current) => Math.min(current, Math.min(10, item.remainingCapacity ?? 0)));
+                    }}
                     aria-pressed={scheduleId === item.id}
                   >
                     <strong>{item.dates}</strong>
-                    <span>{item.duration} · {item.status ? PRODUCT_STATUS_LABEL[item.status] : "모집 중"}</span>
+                    <span>{item.duration} · {item.status ? PRODUCT_STATUS_LABEL[item.status] : "모집 중"}{typeof item.remainingCapacity === "number" ? ` · 잔여 ${item.remainingCapacity}석` : ""}</span>
                   </S.ChoiceCard>
                 ))}
               </S.ChoiceGrid>
@@ -414,11 +470,12 @@ export default function BookingPage() {
             <S.PeopleRow>
               <strong>신청 인원</strong>
               <S.Counter>
-                <button type="button" onClick={() => setPeople((value) => Math.max(1, value - 1))} aria-label="인원 줄이기">−</button>
+                <button type="button" onClick={() => setPeople((value) => Math.max(1, value - 1))} disabled={!schedule || people <= 1} aria-label="인원 줄이기">−</button>
                 <strong>{people}명</strong>
-                <button type="button" onClick={() => setPeople((value) => Math.min(10, value + 1))} aria-label="인원 늘리기">+</button>
+                <button type="button" onClick={() => setPeople((value) => Math.min(maxPeople, value + 1))} disabled={!schedule || people >= maxPeople} aria-label="인원 늘리기">+</button>
               </S.Counter>
             </S.PeopleRow>
+            <S.HelpText>{schedule ? `남은 ${schedule.remainingCapacity ?? 0}석 중 최대 ${maxPeople}명까지 신청할 수 있어요.` : "일정을 먼저 선택해 주세요."}</S.HelpText>
           </S.Section>
 
           <S.Section>
@@ -504,11 +561,12 @@ export default function BookingPage() {
               <label htmlFor="agree-all">전체 약관 동의</label>
             </S.AllAgreement>
             <S.AgreementList>
-              {["개인정보 수집·이용 동의 (필수)", "여행 약관 동의 (필수)", "취소 및 위약금 규정 동의 (필수)"].map((label, index) => (
-                <S.Agreement key={label}>
-                  <input id={`agreement-${index}`} type="checkbox" checked={agreements[index]} onChange={() => toggleAgreement(index)} />
-                  <label htmlFor={`agreement-${index}`}>{label}</label>
-                  <FiChevronRight aria-hidden="true" />
+              {agreementDetails.map((agreement, index) => (
+                <S.Agreement key={agreement.title}>
+                  <input id={`agreement-${index}`} type="checkbox" aria-label={`${agreement.title} (필수)`} checked={agreements[index]} onChange={() => toggleAgreement(index)} />
+                  <S.AgreementDetailsButton type="button" onClick={() => setOpenAgreement(index)} aria-label={`${agreement.title} 내용 보기`}>
+                    <span>{agreement.title} (필수)</span><FiChevronRight aria-hidden="true" />
+                  </S.AgreementDetailsButton>
                 </S.Agreement>
               ))}
             </S.AgreementList>
@@ -568,6 +626,18 @@ export default function BookingPage() {
             </S.CompletionActions>
           </S.CompletionDialog>
         </S.CompletionBackdrop>
+      )}
+
+      {openAgreement !== null && (
+        <Modal open title={agreementDetails[openAgreement].title} onClose={() => setOpenAgreement(null)} size="large" tone="warm">
+          <S.AgreementContent>
+            <p>미스터월드 서비스 · 최강팀 약관 안내 예시</p>
+            {agreementDetails[openAgreement].sections.map(([heading, content]) => (
+              <section key={heading}><h3>{heading}</h3><p>{content}</p></section>
+            ))}
+          </S.AgreementContent>
+          <S.AgreementCloseButton type="button" onClick={() => setOpenAgreement(null)}>확인</S.AgreementCloseButton>
+        </Modal>
       )}
 
       <Modal
@@ -668,5 +738,6 @@ function productToSchedule(product: TravelProduct) {
     dates: `${date(departure, true)} – ${date(returned)}`,
     duration: `${nights}박 ${nights + 1}일`,
     status: product.status,
+    remainingCapacity: product.remainingCapacity,
   };
 }

@@ -44,7 +44,6 @@ export default function HomePage() {
   const [reservationOptionsOpen, setReservationOptionsOpen] = useState(
     () => window.sessionStorage.getItem("showReservationOptions") === "true",
   );
-  const [reservationMessage, setReservationMessage] = useState("");
   const [reservationItems, setReservationItems] = useState<HomeReservation[]>([]);
   const [historyItems, setHistoryItems] = useState<TravelHistoryGroup[]>([]);
   const [profileName, setProfileName] = useState("고객");
@@ -77,7 +76,6 @@ export default function HomePage() {
   }, [isLoggedIn]);
 
   function openReservationOptions() {
-    setReservationMessage("");
     setReservationOptionsOpen(true);
   }
 
@@ -287,7 +285,7 @@ export default function HomePage() {
         <S.ReservationOptionGrid>
           <S.ReservationOption
             type="button"
-            onClick={() => setReservationMessage("음성 예약 서비스는 준비 중입니다.")}
+            onClick={() => window.location.assign("/voice")}
           >
             <FiMic aria-hidden="true" />
             <strong>음성으로</strong>
@@ -299,9 +297,6 @@ export default function HomePage() {
             <span>테마, 등급, 구성을 화면에서 하나씩 골라요</span>
           </S.ReservationOption>
         </S.ReservationOptionGrid>
-        <S.ReservationOptionMessage role="status" aria-live="polite">
-          {reservationMessage}
-        </S.ReservationOptionMessage>
       </Modal>
     </S.HomePage>
   );

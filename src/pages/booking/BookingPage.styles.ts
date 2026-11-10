@@ -219,6 +219,7 @@ export const Counter = styled.div`
     border: 1px solid #807a73;
     border-radius: 3px;
     background: #fff;
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 `;
 
@@ -360,7 +361,7 @@ export const AgreementList = styled.div`
 
 export const Agreement = styled.div`
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 9px;
   min-height: 39px;
@@ -769,4 +770,45 @@ export const ConfirmPaymentButton = styled.button`
   }
 
   @media (max-width: 440px) { min-width: 0; flex: 1; }
+`;
+
+export const AgreementDetailsButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  &:focus-visible { outline: 2px solid #88745a; outline-offset: 2px; }
+`;
+
+export const AgreementContent = styled.div`
+  color: #514c46;
+  font-size: 14px;
+  line-height: 1.7;
+  > p { margin: 0 0 20px; color: #756e66; font-size: 13px; }
+  section + section { margin-top: 20px; }
+  h3 { margin: 0 0 6px; color: #1d1c1a; font-size: 15px; }
+  section p { margin: 0; }
+`;
+
+export const AgreementCloseButton = styled.button`
+  display: block;
+  min-width: 120px;
+  min-height: 44px;
+  margin: 28px 0 0 auto;
+  border: 0;
+  border-radius: 4px;
+  background: #1d1c1a;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  &:focus-visible { outline: 2px solid #88745a; outline-offset: 3px; }
 `;

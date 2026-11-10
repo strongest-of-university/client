@@ -3,6 +3,7 @@ import LoginPage from './pages/login/LoginPage'
 import SignupPage from './pages/signup/SignupPage'
 import MyPage from './pages/mypage/MyPage'
 import BookingPage from './pages/booking/BookingPage'
+import VoicePage from './pages/voice/VoicePage'
 import NoticePage from './pages/notices/NoticePage'
 import ThemeDetailPage from './pages/themes/ThemeDetailPage'
 import StaffPage from './pages/staff/StaffPage'
@@ -34,6 +35,9 @@ export default function Router() {
 
   if (pathname === '/mypage') {
     return customerAuthenticated ? <MyPage /> : <LoginPage />
+  }
+  if (pathname === '/voice') {
+    return customerAuthenticated ? <VoicePage /> : <LoginPage reservationRequired />
   }
   if (pathname === '/booking') {
     return customerAuthenticated ? <BookingPage /> : <LoginPage reservationRequired />
