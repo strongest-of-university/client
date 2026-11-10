@@ -387,16 +387,6 @@ export const Summary = styled.aside`
   }
 `;
 
-export const SummaryBadge = styled.span`
-  display: inline-block;
-  margin-bottom: 17px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: #4d4842;
-  background: #f1eee8;
-  font-size: 9px;
-`;
-
 export const SummaryTitle = styled.h2`
   margin: 0 0 16px;
   font-size: 20px;

@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
 import type { VoiceDraft } from "../../api/voice";
-import { createBooking, getTravelProducts, previewBooking, type BookingPreview, type BookingSelection, type ThemeCode, type TravelProduct } from "../../api/services";
+import { createBooking, getTravelProduct, getTravelProducts, previewBooking, type BookingPreview, type BookingSelection, type ThemeCode, type TravelProduct } from "../../api/services";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import * as S from "./BookingPage.styles";
@@ -12,7 +12,7 @@ type Grade = {
   name: string;
   hotel: string;
   meal: string;
-  price: number;
+  drink?: string;
   unavailable?: boolean;
 };
 
@@ -40,9 +40,9 @@ const themes: Theme[] = [
       { id: "honeymoon-2", dates: "2026.12.19 – 12.23", duration: "4박 5일" },
     ],
     grades: [
-      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", price: 1890000, unavailable: true },
-      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑", price: 2160000 },
-      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크와 샴페인", price: 2550000 },
+      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", unavailable: true },
+      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
+      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크", drink: "샴페인" },
     ],
   },
   {
@@ -57,9 +57,9 @@ const themes: Theme[] = [
       { id: "healing-2", dates: "2027.01.09 – 01.12", duration: "3박 4일" },
     ],
     grades: [
-      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", price: 1290000, unavailable: true },
-      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑", price: 1560000 },
-      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크와 샴페인", price: 1950000 },
+      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", unavailable: true },
+      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
+      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크", drink: "샴페인" },
     ],
   },
   {
@@ -74,9 +74,9 @@ const themes: Theme[] = [
       { id: "golf-2", dates: "2026.12.12 – 12.16", duration: "4박 5일" },
     ],
     grades: [
-      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", price: 1590000 },
-      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑", price: 1860000 },
-      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크와 샴페인", price: 2250000 },
+      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락" },
+      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
+      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크", drink: "샴페인" },
     ],
   },
   {
@@ -91,9 +91,9 @@ const themes: Theme[] = [
       { id: "trekking-2", dates: "2026.11.28 – 12.01", duration: "3박 4일" },
     ],
     grades: [
-      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", price: 990000 },
-      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑", price: 1260000 },
-      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크와 샴페인", price: 1650000 },
+      { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락" },
+      { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
+      { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크", drink: "샴페인" },
     ],
   },
 ];
@@ -137,22 +137,22 @@ const agreementDetails = [
 
 const currency = new Intl.NumberFormat("ko-KR");
 const hotelChoices = [
-  { value: "3성급 호텔", price: 0, priceLabel: "0원" },
-  { value: "4성급 호텔", price: 180000, priceLabel: "+18만" },
-  { value: "5성급 호텔", price: 420000, priceLabel: "+42만" },
+  { value: "3성급 호텔" },
+  { value: "4성급 호텔" },
+  { value: "5성급 호텔" },
 ];
 const transportChoices = [
-  { value: "2인 전용 고급차량", price: 150000, priceLabel: "+15만" },
-  { value: "10인 승합 고급차량", price: 60000, priceLabel: "+6만" },
+  { value: "2인 전용 고급차량" },
+  { value: "10인 승합 고급차량" },
 ];
 const mealChoices = [
-  { value: "도시락", price: 0, priceLabel: "0원" },
-  { value: "현지식 레스토랑", price: 90000, priceLabel: "+9만" },
-  { value: "고급 레스토랑 스테이크와 샴페인", price: 240000, priceLabel: "+24만" },
+  { value: "도시락" },
+  { value: "현지식 레스토랑" },
+  { value: "고급 레스토랑 스테이크" },
 ];
 const drinkChoices = [
-  { value: "샴페인", price: 40000, priceLabel: "+40,000원" },
-  { value: "커피", price: 7000, priceLabel: "+7,000원" },
+  { value: "샴페인" },
+  { value: "커피" },
 ];
 
 const THEME_CODES: Record<string, ThemeCode> = {
@@ -170,10 +170,6 @@ const PRODUCT_STATUS_LABEL: Record<TravelProduct["status"], string> = {
   COMPLETED: "여행 완료",
   CANCELLED: "판매 취소",
 };
-
-function getChoicePrice(choices: { value: string; price: number }[], value?: string) {
-  return choices.find((choice) => choice.value === value)?.price ?? 0;
-}
 
 export default function BookingPage() {
   const [themeId, setThemeId] = useState("");
@@ -199,6 +195,7 @@ export default function BookingPage() {
   const [installmentOpen, setInstallmentOpen] = useState(false);
   const [productsByTheme, setProductsByTheme] = useState<Partial<Record<ThemeCode, TravelProduct[]>>>({});
   const [previewState, setPreviewState] = useState<{ key: string; data: BookingPreview } | null>(null);
+  const [drinkPriceState, setDrinkPriceState] = useState<{ key: string; champagne: number; coffee: number } | null>(null);
 
   const availableThemes = useMemo(() => themes.map((item) => {
     const products = productsByTheme[THEME_CODES[item.id]];
@@ -214,33 +211,33 @@ export default function BookingPage() {
   const theme = availableThemes.find((item) => item.id === themeId);
   const schedule = theme?.schedules.find((item) => item.id === scheduleId);
   const grade = theme?.grades.find((item) => item.id === gradeId);
+  const selectedProduct = theme ? productsByTheme[THEME_CODES[theme.id]]?.find((product) => product.travelProductId === schedule?.travelProductId) : undefined;
   const allAgreed = agreements.every(Boolean);
-  const maxPeople = typeof schedule?.remainingCapacity === "number" ? Math.min(10, Math.max(0, schedule.remainingCapacity)) : 0;
-  const hasCapacity = maxPeople > 0 && people <= maxPeople && (schedule?.status === "RECRUITING" || schedule?.status === "CONFIRMED");
+  const isHoneymoon = theme?.id === "honeymoon";
+  const rawMaxPeople = typeof schedule?.remainingCapacity === "number" ? Math.min(10, Math.max(0, schedule.remainingCapacity)) : 0;
+  const maxPeople = isHoneymoon ? Math.floor(rawMaxPeople / 2) * 2 : rawMaxPeople;
+  const minimumPeople = isHoneymoon ? 2 : 1;
+  const peopleStep = isHoneymoon ? 2 : 1;
+  const hasCapacity = maxPeople >= minimumPeople && people >= minimumPeople && people <= maxPeople && (!isHoneymoon || people % 2 === 0) && (schedule?.status === "RECRUITING" || schedule?.status === "CONFIRMED");
   const isComplete = Boolean(theme && schedule?.travelProductId && hasCapacity && grade && allAgreed);
   const selectedHotel = hotelOption || grade?.hotel;
   const selectedTransport = transportOption || theme?.transport;
   const selectedMeal = mealOption || grade?.meal;
   const requiresGrandOrHigher = theme?.id === "honeymoon" || theme?.id === "healing";
+  const defaultDrinkOptions = grade?.drink ? [grade.drink] : [];
+  const changedDrinkOptions = new Set([...defaultDrinkOptions, ...drinkOptions]);
   const changedOptions = [
     hotelOption && hotelOption !== grade?.hotel,
     transportOption && transportOption !== theme?.transport,
     mealOption && mealOption !== grade?.meal,
-  ].filter(Boolean).length + drinkOptions.length;
-  const optionAdjustment = grade && theme
-    ? getChoicePrice(hotelChoices, selectedHotel) - getChoicePrice(hotelChoices, grade.hotel)
-      + getChoicePrice(transportChoices, selectedTransport) - getChoicePrice(transportChoices, theme.transport)
-      + getChoicePrice(mealChoices, selectedMeal) - getChoicePrice(mealChoices, grade.meal)
-      + drinkOptions.reduce((sum, option) => sum + getChoicePrice(drinkChoices, option), 0)
-    : 0;
-  const price = grade ? (grade.price + optionAdjustment) * people : 0;
+  ].filter(Boolean).length + [...changedDrinkOptions].filter((option) => defaultDrinkOptions.includes(option) !== drinkOptions.includes(option)).length;
   const formattedCardNumber = cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ");
   const paymentReady = cardNumber.length === 16
     && /^\d{2} \/ \d{2}$/.test(expiry)
     && securityCode.length === 3
     && cardOwner.trim().length > 0;
 
-  const bookingSelection = useMemo<BookingSelection | null>(() => {
+  const bookingSelection: BookingSelection | null = (() => {
     if (!schedule?.travelProductId || !hasCapacity || !grade || !selectedHotel || !selectedTransport || !selectedMeal) return null;
     return {
       travelProductId: schedule.travelProductId,
@@ -251,16 +248,21 @@ export default function BookingPage() {
       selectedMeal: selectedMeal === "도시락" ? 1 : selectedMeal === "현지식 레스토랑" ? 2 : 3,
       selectedDrink: drinkOptions.length === 0 ? 0 : drinkOptions.length === 2 ? 3 : drinkOptions[0] === "샴페인" ? 1 : 2,
     };
-  }, [drinkOptions, grade, hasCapacity, people, schedule, selectedHotel, selectedMeal, selectedTransport]);
+  })();
   const selectionKey = bookingSelection ? JSON.stringify(bookingSelection) : "";
+  const drinkPriceKey = bookingSelection ? JSON.stringify({ ...bookingSelection, numberOfPeople: 1, selectedDrink: 0 }) : "";
   const bookingPreview = previewState?.key === selectionKey ? previewState.data : null;
-  const displayedOriginalPrice = bookingPreview?.originalPrice ?? price;
-  const discount = bookingPreview?.discountAmount ?? Math.round(price * 0.05);
-  const finalPrice = bookingPreview?.totalPrice ?? price - discount;
+  const displayedOriginalPrice = bookingPreview?.originalPrice;
+  const discount = bookingPreview?.discountAmount;
+  const finalPrice = bookingPreview?.totalPrice;
 
   useEffect(() => {
     let active = true;
-    Promise.all((Object.values(THEME_CODES) as ThemeCode[]).map(async (code) => [code, await getTravelProducts(code)] as const))
+    Promise.all((Object.values(THEME_CODES) as ThemeCode[]).map(async (code) => {
+      const products = await getTravelProducts(code);
+      const details = await Promise.all(products.map((product) => getTravelProduct(product.travelProductId).catch(() => product)));
+      return [code, details.map((detail, index) => ({ ...products[index], ...detail, theme: code }))] as const;
+    }))
       .then((entries) => {
         if (!active) return;
         const next = Object.fromEntries(entries) as Record<ThemeCode, TravelProduct[]>;
@@ -274,15 +276,19 @@ export default function BookingPage() {
             setScheduleId(String(savedId));
             const selectedProduct = matched[1].find((product) => product.travelProductId === savedId);
             const capacity = Math.max(0, Math.min(10, selectedProduct?.remainingCapacity ?? 0));
-            if (capacity > 0) setPeople((current) => Math.min(current, capacity));
+            if (capacity > 0) setPeople((current) => clampPeople(current, capacity, selectedThemeId === "honeymoon"));
             const savedDraft = window.sessionStorage.getItem("voiceBookingDraft");
             if (savedDraft) {
               try {
                 const draft = JSON.parse(savedDraft) as VoiceDraft;
                 const selectedTheme = themes.find((item) => item.id === selectedThemeId);
                 const matchedGrade = selectedTheme?.grades.find((item) => item.id.toUpperCase() === draft.tourLevel && !item.unavailable);
-                if (matchedGrade) setGradeId(matchedGrade.id);
-                if (Number.isInteger(draft.numberOfPeople) && draft.numberOfPeople! >= 1 && capacity > 0) setPeople(Math.min(draft.numberOfPeople!, capacity));
+                if (matchedGrade) {
+                  setGradeId(matchedGrade.id);
+                  setMealOption(matchedGrade.meal);
+                  setDrinkOptions(matchedGrade.drink ? [matchedGrade.drink] : []);
+                }
+                if (Number.isInteger(draft.numberOfPeople) && draft.numberOfPeople! >= 1 && capacity > 0) setPeople(clampPeople(draft.numberOfPeople!, capacity, selectedThemeId === "honeymoon"));
                 const restricted = selectedThemeId === "honeymoon" || selectedThemeId === "healing";
                 if (draft.selectedHotel && draft.selectedHotel >= (restricted ? 4 : 3) && draft.selectedHotel <= 5) setHotelOption(`${draft.selectedHotel}성급 호텔`);
                 if (draft.selectedTransportation === 1 || draft.selectedTransportation === 2) setTransportOption(transportChoices[draft.selectedTransportation - 1].value);
@@ -303,10 +309,11 @@ export default function BookingPage() {
   }, []);
 
   useEffect(() => {
-    if (!bookingSelection) return;
+    if (!selectionKey) return;
+    const selection = JSON.parse(selectionKey) as BookingSelection;
     let active = true;
     const timer = window.setTimeout(() => {
-      previewBooking(bookingSelection)
+      previewBooking(selection)
         .then((preview) => {
           if (active) setPreviewState({ key: selectionKey, data: preview });
         })
@@ -318,19 +325,37 @@ export default function BookingPage() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [bookingSelection, selectionKey]);
+  }, [selectionKey]);
 
-  const currentStep = useMemo(() => {
+  useEffect(() => {
+    if (!drinkPriceKey) return;
+    let active = true;
+    const baseSelection = JSON.parse(drinkPriceKey) as BookingSelection;
+    Promise.all([
+      previewBooking({ ...baseSelection, selectedDrink: 1 }),
+      previewBooking({ ...baseSelection, selectedDrink: 2 }),
+    ])
+      .then(([champagne, coffee]) => {
+        if (active) setDrinkPriceState({ key: drinkPriceKey, champagne: champagne.drinkPrice, coffee: coffee.drinkPrice });
+      })
+      .catch(() => {
+        if (active) setDrinkPriceState(null);
+      });
+    return () => { active = false; };
+  }, [drinkPriceKey]);
+
+  const currentStep = (() => {
     if (!theme) return 1;
     if (!schedule) return 2;
     if (!grade) return 4;
     if (!allAgreed) return 5;
     return 6;
-  }, [allAgreed, grade, schedule, theme]);
+  })();
 
   function selectTheme(nextTheme: Theme) {
     setThemeId(nextTheme.id);
     setScheduleId("");
+    setPeople(2);
     setGradeId("");
     setHotelOption("");
     setTransportOption("");
@@ -340,9 +365,11 @@ export default function BookingPage() {
   }
 
   function selectGrade(nextGradeId: Grade["id"]) {
+    const nextGrade = theme?.grades.find((item) => item.id === nextGradeId);
     setGradeId(nextGradeId);
     setHotelOption("");
-    setMealOption("");
+    setMealOption(nextGrade?.meal ?? "");
+    setDrinkOptions(nextGrade?.drink ? [nextGrade.drink] : []);
     setSubmitMessage("");
   }
 
@@ -452,7 +479,7 @@ export default function BookingPage() {
                     disabled={!item.travelProductId || !Number.isFinite(item.remainingCapacity) || (item.remainingCapacity ?? 0) <= 0 || (item.status !== "RECRUITING" && item.status !== "CONFIRMED")}
                     onClick={() => {
                       setScheduleId(item.id);
-                      setPeople((current) => Math.min(current, Math.min(10, item.remainingCapacity ?? 0)));
+                      setPeople((current) => clampPeople(current, Math.min(10, item.remainingCapacity ?? 0), theme.id === "honeymoon"));
                     }}
                     aria-pressed={scheduleId === item.id}
                   >
@@ -470,12 +497,12 @@ export default function BookingPage() {
             <S.PeopleRow>
               <strong>신청 인원</strong>
               <S.Counter>
-                <button type="button" onClick={() => setPeople((value) => Math.max(1, value - 1))} disabled={!schedule || people <= 1} aria-label="인원 줄이기">−</button>
+                <button type="button" onClick={() => setPeople((value) => Math.max(minimumPeople, value - peopleStep))} disabled={!schedule || people <= minimumPeople} aria-label="인원 줄이기">−</button>
                 <strong>{people}명</strong>
-                <button type="button" onClick={() => setPeople((value) => Math.min(maxPeople, value + 1))} disabled={!schedule || people >= maxPeople} aria-label="인원 늘리기">+</button>
+                <button type="button" onClick={() => setPeople((value) => Math.min(maxPeople, value + peopleStep))} disabled={!schedule || people >= maxPeople} aria-label="인원 늘리기">+</button>
               </S.Counter>
             </S.PeopleRow>
-            <S.HelpText>{schedule ? `남은 ${schedule.remainingCapacity ?? 0}석 중 최대 ${maxPeople}명까지 신청할 수 있어요.` : "일정을 먼저 선택해 주세요."}</S.HelpText>
+            <S.HelpText>{schedule ? isHoneymoon ? `허니문은 2명 단위로 신청할 수 있어요. 남은 ${schedule.remainingCapacity ?? 0}석 중 최대 ${maxPeople}명까지 선택할 수 있습니다.` : `남은 ${schedule.remainingCapacity ?? 0}석 중 최대 ${maxPeople}명까지 신청할 수 있어요.` : "일정을 먼저 선택해 주세요."}</S.HelpText>
           </S.Section>
 
           <S.Section>
@@ -483,9 +510,9 @@ export default function BookingPage() {
             <S.SectionDescription>등급은 기본 호텔과 식사 구성을 정합니다.</S.SectionDescription>
             <S.GradeGrid>
               {(theme?.grades ?? [
-                { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", price: 0 },
-                { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑", price: 0 },
-                { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크와 샴페인", price: 0 },
+                { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락" },
+                { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
+                { id: "premium", name: "프리미엄", hotel: "5성급 호텔", meal: "고급 레스토랑 스테이크", drink: "샴페인" },
               ] as Grade[]).map((item) => (
                 <S.GradeCard
                   key={item.id}
@@ -496,7 +523,7 @@ export default function BookingPage() {
                   aria-pressed={gradeId === item.id}
                 >
                   <strong>{item.name}</strong>
-                  <span>{item.hotel} · {item.meal}</span>
+                  <span>{item.hotel} · {item.meal}{item.drink ? ` · ${item.drink}` : ""}</span>
                   {item.unavailable && <small>이 테마에서는 선택 불가</small>}
                 </S.GradeCard>
               ))}
@@ -516,7 +543,8 @@ export default function BookingPage() {
                     {hotelChoices.map((choice) => {
                       const unavailable = requiresGrandOrHigher && choice.value === "3성급 호텔";
                       const selected = selectedHotel === choice.value;
-                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setHotelOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{unavailable ? "이 테마 선택 불가" : `${choice.priceLabel}${choice.value === grade.hotel ? " · 등급 기본" : ""}`}</span></S.OptionButton>;
+                      const price = choice.value === "3성급 호텔" ? selectedProduct?.threeStarHotelPrice : choice.value === "4성급 호텔" ? selectedProduct?.fourStarHotelPrice : selectedProduct?.fiveStarHotelPrice;
+                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setHotelOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{unavailable ? "이 테마 선택 불가" : `${formatApiOptionPrice(price)}${choice.value === grade.hotel ? " · 등급 기본" : ""}`}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -525,7 +553,8 @@ export default function BookingPage() {
                   <S.OptionChoices>
                     {transportChoices.map((choice) => {
                       const selected = selectedTransport === choice.value;
-                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => setTransportOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{choice.priceLabel}{choice.value === theme.transport ? " · 테마 기본" : ""}</span></S.OptionButton>;
+                      const price = choice.value.startsWith("2인") ? selectedProduct?.luxuryCarPrice : selectedProduct?.luxuryVanPrice;
+                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => setTransportOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatApiOptionPrice(price)}{choice.value === theme.transport ? " · 테마 기본" : ""}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -535,8 +564,9 @@ export default function BookingPage() {
                     {mealChoices.map((choice) => {
                       const unavailable = requiresGrandOrHigher && choice.value === "도시락";
                       const selected = selectedMeal === choice.value;
-                      const label = choice.value === "고급 레스토랑 스테이크와 샴페인" ? "스테이크 & 샴페인" : choice.value;
-                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setMealOption(choice.value)} aria-pressed={selected}><strong>{label}</strong><span>{unavailable ? "이 테마 선택 불가" : `${choice.priceLabel}${choice.value === grade.meal ? " · 등급 기본" : ""}`}</span></S.OptionButton>;
+                      const label = choice.value === "고급 레스토랑 스테이크" ? "스테이크" : choice.value;
+                      const price = choice.value === "도시락" ? selectedProduct?.lunchPrice : choice.value === "현지식 레스토랑" ? selectedProduct?.localRestaurantPrice : selectedProduct?.steakPrice;
+                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setMealOption(choice.value)} aria-pressed={selected}><strong>{label}</strong><span>{unavailable ? "이 테마 선택 불가" : `${formatApiOptionPrice(price)}${choice.value === grade.meal ? " · 등급 기본" : ""}`}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -545,7 +575,9 @@ export default function BookingPage() {
                   <S.OptionChoices>
                     {drinkChoices.map((choice) => {
                       const selected = drinkOptions.includes(choice.value);
-                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => toggleDrink(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{choice.priceLabel}</span></S.OptionButton>;
+                      const apiPrices = drinkPriceState?.key === drinkPriceKey ? drinkPriceState : null;
+                      const price = choice.value === "샴페인" ? apiPrices?.champagne : apiPrices?.coffee;
+                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => toggleDrink(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatApiOptionPrice(price)}{choice.value === grade.drink ? " · 등급 기본" : ""}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -574,7 +606,6 @@ export default function BookingPage() {
         </S.Content>
 
         <S.Summary>
-          <S.SummaryBadge>● {theme ? "선택 중" : "선택 전"}</S.SummaryBadge>
           <S.SummaryTitle>{theme?.title ?? "테마를 선택해 주세요"}</S.SummaryTitle>
           <S.SummaryList>
             <div><dt>등급</dt><dd>{grade?.name ?? "–"}</dd></div>
@@ -588,7 +619,7 @@ export default function BookingPage() {
           </S.SummaryList>
           <S.PriceList>
             <div><dt>여행·옵션 금액</dt><dd>{displayedOriginalPrice ? `${currency.format(displayedOriginalPrice)}원` : "–"}</dd></div>
-            <div><dt>단골 고객 5% 할인</dt><dd>{discount ? `−${currency.format(discount)}원` : "–"}</dd></div>
+            <div><dt>단골 고객 7% 할인</dt><dd>{discount ? `−${currency.format(discount)}원` : "–"}</dd></div>
             <div><dt>최종 결제 예정 금액</dt><dd>{finalPrice ? `${currency.format(finalPrice)}원` : "–"}</dd></div>
           </S.PriceList>
           <S.SubmitButton type="submit" disabled={!isComplete}>결제하기</S.SubmitButton>
@@ -712,7 +743,7 @@ export default function BookingPage() {
         </S.PaymentFields>
         <S.PaymentTotal>
           <strong>총 결제 금액</strong>
-          <span><b>{currency.format(finalPrice)}원</b><small>유류할증료·세금 포함</small></span>
+          <span><b>{typeof finalPrice === "number" ? `${currency.format(finalPrice)}원` : "–"}</b><small>유류할증료·세금 포함</small></span>
         </S.PaymentTotal>
         <S.PaymentActions>
           <S.PreviousButton type="button" onClick={() => setPaymentOpen(false)}>이전</S.PreviousButton>
@@ -721,6 +752,28 @@ export default function BookingPage() {
       </Modal>
     </S.Page>
   );
+}
+
+function formatApiOptionPrice(value?: number) {
+  if (typeof value !== "number") return "가격 확인 중";
+  if (value === 0) return "0원 · 기본가 포함";
+  return `+${currency.format(value)}원`;
+}
+
+function clampPeople(value: number, capacity: number, evenOnly: boolean) {
+  const boundedCapacity = Math.min(10, Math.max(0, capacity));
+
+  if (!evenOnly) {
+    return boundedCapacity > 0
+      ? Math.min(Math.max(1, value), boundedCapacity)
+      : 1;
+  }
+
+  const evenMaximum = Math.floor(boundedCapacity / 2) * 2;
+  if (evenMaximum < 2) return 2;
+
+  const evenValue = Math.max(2, Math.ceil(value / 2) * 2);
+  return Math.min(evenValue, evenMaximum);
 }
 
 function productToSchedule(product: TravelProduct) {
