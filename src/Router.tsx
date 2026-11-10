@@ -11,14 +11,15 @@ import StaffReservationPage from './pages/staff/StaffReservationPage'
 import StaffStockPage from './pages/staff/StaffStockPage'
 import StaffSmsPage from './pages/staff/StaffSmsPage'
 import { golfTheme, healingTheme, honeymoonTheme, trekkingTheme } from './pages/themes/themeDetails'
-import { getAccessToken } from './api/client'
+import { getAccessToken, getSessionRole } from './api/client'
 
 /** Central route entrypoint. Add new top-level routes here as the app grows. */
 export default function Router() {
   const pathname = window.location.pathname.replace(/\/+$/, '')
   const authenticated = Boolean(getAccessToken())
-  const staffAuthenticated = authenticated && window.sessionStorage.getItem('isStaff') === 'true'
-  const customerAuthenticated = authenticated && window.sessionStorage.getItem('isLoggedIn') === 'true'
+  const role = authenticated ? getSessionRole() : null
+  const staffAuthenticated = role === 'STAFF'
+  const customerAuthenticated = role === 'CUSTOMER'
 
   if (pathname === '/staff/reservations') {
     return staffAuthenticated ? <StaffReservationPage /> : <LoginPage />

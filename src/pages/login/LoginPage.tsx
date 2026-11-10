@@ -1,6 +1,6 @@
 import Header from "../../components/Header";
 import { useState, type FormEvent } from "react";
-import { clearSession, getErrorMessage, setAccessToken } from "../../api/client";
+import { clearSession, getErrorMessage, setAccessToken, setSessionRole, type SessionRole } from "../../api/client";
 import { getMyProfile, login } from "../../api/services";
 import * as S from "./LoginPage.styles";
 
@@ -25,14 +25,19 @@ export default function LoginPage({ reservationRequired = false }: { reservation
       const auth = await login(loginId, password);
       setAccessToken(auth.accessToken);
       const profile = await getMyProfile();
+      const role = normalizeRole(profile.role);
 
-      if (profile.role === "STAFF") {
-        window.sessionStorage.setItem("isStaff", "true");
+      if (!role) {
+        throw new Error("회원 역할을 확인할 수 없습니다. 관리자에게 문의해 주세요.");
+      }
+
+      setSessionRole(role);
+
+      if (role === "STAFF") {
         window.location.assign("/staff");
         return;
       }
 
-      window.sessionStorage.setItem("isLoggedIn", "true");
       if (reservationRequired) {
         window.sessionStorage.setItem("showReservationOptions", "true");
       } else {
@@ -78,4 +83,10 @@ export default function LoginPage({ reservationRequired = false }: { reservation
       </S.Main>
     </S.Page>
   );
+}
+
+function normalizeRole(role: unknown): SessionRole | null {
+  if (typeof role !== "string") return null;
+  const normalized = role.toUpperCase().replace(/^ROLE_/, "");
+  return normalized === "STAFF" || normalized === "CUSTOMER" ? normalized : null;
 }

@@ -357,7 +357,7 @@ function toReservation(booking: BookingDto): Reservation {
   const theme = booking.theme ?? (typeof booking.travelProduct === "object" ? booking.travelProduct?.theme : undefined) ?? "";
   const status = STATUS_LABEL[booking.bookingStatus] ?? booking.bookingStatus;
   const cancelled = booking.bookingStatus === "CANCELLED";
-  const unavailable = booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "IN_PROGRESS" || booking.bookingStatus === "COMPLETED";
+  const unavailable = booking.cancellable === false || booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "IN_PROGRESS" || booking.bookingStatus === "COMPLETED";
   return {
     bookingId: booking.bookingId,
     date: formatDate(booking.departureDate),

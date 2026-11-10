@@ -45,17 +45,17 @@ function durationBetween(start: string, end: string) {
 export default function StaffPage() {
   const [activeView, setActiveView] = useState<"create" | "list">("create");
   const [themeId, setThemeId] = useState<ThemeId>("trekking");
-  const [startDate, setStartDate] = useState("2026-12-19");
-  const [endDate, setEndDate] = useState("2026-12-23");
-  const [capacityInput, setCapacityInput] = useState("10");
-  const [basePriceInput, setBasePriceInput] = useState("1050000");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [capacityInput, setCapacityInput] = useState("");
+  const [basePriceInput, setBasePriceInput] = useState("");
   const [hotel, setHotel] = useState("3성 호텔");
   const [meal, setMeal] = useState("도시락");
   const [transport, setTransport] = useState("10인 승합 고급차량");
-  const [hotelPrices, setHotelPrices] = useState<Record<string, string>>({ "3성 호텔": "0", "4성 호텔": "180000", "5성 호텔": "420000" });
-  const [mealPrices, setMealPrices] = useState<Record<string, string>>({ "도시락": "0", "현지식 레스토랑": "90000", "스테이크 & 샴페인": "240000" });
-  const [transportPrices, setTransportPrices] = useState<Record<string, string>>({ "2인 고급차량": "90000", "10인 승합 고급차량": "0" });
-  const [extraPrices, setExtraPrices] = useState({ champagne: "40000", coffee: "7000" });
+  const [hotelPrices, setHotelPrices] = useState<Record<string, string>>({ "3성 호텔": "", "4성 호텔": "", "5성 호텔": "" });
+  const [mealPrices, setMealPrices] = useState<Record<string, string>>({ "도시락": "", "현지식 레스토랑": "", "스테이크 & 샴페인": "" });
+  const [transportPrices, setTransportPrices] = useState<Record<string, string>>({ "2인 고급차량": "", "10인 승합 고급차량": "" });
+  const [extraPrices, setExtraPrices] = useState({ champagne: "", coffee: "" });
   const [products, setProducts] = useState<Product[]>([]);
   const [inventory] = useState(loadInventory);
   const [productFilter, setProductFilter] = useState<"all" | ThemeId>("all");
@@ -189,24 +189,24 @@ export default function StaffPage() {
               <S.FieldLabel>호텔</S.FieldLabel>
               <S.OptionGrid $columns={3}>{["3성 호텔", "4성 호텔", "5성 호텔"].map((name) => {
                 const selected = hotel === name;
-                return <S.OptionCard key={name} $selected={selected}><S.OptionChoice type="button" onClick={() => setHotel(name)}><strong>{name}</strong></S.OptionChoice>{selected ? <S.IncludedPrice>기본가 포함</S.IncludedPrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={hotelPrices[name]} onChange={(event) => setHotelPrices((current) => ({ ...current, [name]: event.target.value }))} /></S.EditablePrice>}</S.OptionCard>;
+                return <S.OptionCard key={name} $selected={selected}><S.OptionChoice type="button" onClick={() => setHotel(name)}><strong>{name}</strong></S.OptionChoice>{selected ? <S.IncludedPrice>기본가 포함</S.IncludedPrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={hotelPrices[name]} onChange={(event) => setHotelPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice>}</S.OptionCard>;
               })}</S.OptionGrid>
             </S.OptionGroup>
             <S.OptionGroup>
               <S.FieldLabel>식사</S.FieldLabel>
               <S.OptionGrid $columns={3}>{["도시락", "현지식 레스토랑", "스테이크 & 샴페인"].map((name) => {
                 const selected = meal === name;
-                return <S.OptionCard key={name} $selected={selected}><S.OptionChoice type="button" onClick={() => setMeal(name)}><strong>{name}</strong></S.OptionChoice>{selected ? <S.IncludedPrice>기본가 포함</S.IncludedPrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={mealPrices[name]} onChange={(event) => setMealPrices((current) => ({ ...current, [name]: event.target.value }))} /></S.EditablePrice>}</S.OptionCard>;
+                return <S.OptionCard key={name} $selected={selected}><S.OptionChoice type="button" onClick={() => setMeal(name)}><strong>{name}</strong></S.OptionChoice>{selected ? <S.IncludedPrice>기본가 포함</S.IncludedPrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={mealPrices[name]} onChange={(event) => setMealPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice>}</S.OptionCard>;
               })}</S.OptionGrid>
             </S.OptionGroup>
             <S.OptionGroup>
               <S.FieldLabel>교통</S.FieldLabel>
               <S.OptionGrid $columns={2}>{["2인 고급차량", "10인 승합 고급차량"].map((name) => {
                 const selected = transport === name;
-                return <S.OptionCard key={name} $selected={selected}><S.OptionChoice type="button" onClick={() => setTransport(name)}><strong>{name}</strong></S.OptionChoice>{selected ? <S.IncludedPrice>기본가 포함</S.IncludedPrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={transportPrices[name]} onChange={(event) => setTransportPrices((current) => ({ ...current, [name]: event.target.value }))} /></S.EditablePrice>}</S.OptionCard>;
+                return <S.OptionCard key={name} $selected={selected}><S.OptionChoice type="button" onClick={() => setTransport(name)}><strong>{name}</strong></S.OptionChoice>{selected ? <S.IncludedPrice>기본가 포함</S.IncludedPrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={transportPrices[name]} onChange={(event) => setTransportPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice>}</S.OptionCard>;
               })}</S.OptionGrid>
             </S.OptionGroup>
-            <S.OptionGroup><S.FieldLabel>추가 옵션</S.FieldLabel><S.FixedOptions><span><strong>샴페인</strong><S.EditablePrice><b>+</b><input aria-label="샴페인 추가 금액" type="number" min="0" step="1000" value={extraPrices.champagne} onChange={(event) => setExtraPrices((current) => ({ ...current, champagne: event.target.value }))} /></S.EditablePrice></span><span><strong>커피</strong><S.EditablePrice><b>+</b><input aria-label="커피 추가 금액" type="number" min="0" step="1000" value={extraPrices.coffee} onChange={(event) => setExtraPrices((current) => ({ ...current, coffee: event.target.value }))} /></S.EditablePrice></span></S.FixedOptions></S.OptionGroup>
+            <S.OptionGroup><S.FieldLabel>추가 옵션</S.FieldLabel><S.FixedOptions><span><strong>샴페인</strong><S.EditablePrice><b>+</b><input aria-label="샴페인 추가 금액" type="number" min="0" step="1000" value={extraPrices.champagne} onChange={(event) => setExtraPrices((current) => ({ ...current, champagne: event.target.value }))} required /></S.EditablePrice></span><span><strong>커피</strong><S.EditablePrice><b>+</b><input aria-label="커피 추가 금액" type="number" min="0" step="1000" value={extraPrices.coffee} onChange={(event) => setExtraPrices((current) => ({ ...current, coffee: event.target.value }))} required /></S.EditablePrice></span></S.FixedOptions></S.OptionGroup>
 
             <S.Warning><strong>주의</strong> 등록한 상품의 일정과 금액은 수정할 수 없어요. 상품 취소 시 예약자에게 취소 안내가 필요하므로 등록 전 다시 한 번 확인해 주세요.</S.Warning>
             <S.RegisterButton type="submit" disabled={stockShortage > 0 || submitting}>{submitting ? "등록 중..." : "상품 등록"}</S.RegisterButton>

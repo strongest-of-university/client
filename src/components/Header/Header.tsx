@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { clearSession, getAccessToken } from "../../api/client";
+import { clearSession, getAccessToken, getSessionRole } from "../../api/client";
 import * as S from "./Header.styles";
 
 type HeaderProps = {
@@ -11,7 +11,7 @@ type HeaderProps = {
 export default function Header({ variant = "default", currentPage, onReservationClick }: HeaderProps) {
   const [scrolled, setScrolled] = useState(() => window.scrollY > 24);
   const [loggedIn, setLoggedIn] = useState(
-    () => Boolean(getAccessToken()) && window.sessionStorage.getItem("isLoggedIn") === "true",
+    () => Boolean(getAccessToken()) && getSessionRole() === "CUSTOMER",
   );
 
   useEffect(() => {

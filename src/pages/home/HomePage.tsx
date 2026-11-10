@@ -1,5 +1,5 @@
 import Header from "../../components/Header";
-import { getAccessToken } from "../../api/client";
+import { getAccessToken, getSessionRole } from "../../api/client";
 import { getMyBookings, getMyProfile, type BookingDto } from "../../api/services";
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
@@ -47,7 +47,7 @@ export default function HomePage() {
   const [reservationItems, setReservationItems] = useState<HomeReservation[]>([]);
   const [historyItems, setHistoryItems] = useState<TravelHistoryGroup[]>([]);
   const [profileName, setProfileName] = useState("고객");
-  const isLoggedIn = Boolean(getAccessToken()) && window.sessionStorage.getItem("isLoggedIn") === "true";
+  const isLoggedIn = Boolean(getAccessToken()) && getSessionRole() === "CUSTOMER";
   const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

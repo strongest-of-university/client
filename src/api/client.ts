@@ -1,6 +1,9 @@
 const DEFAULT_API_BASE_URL = "https://api.xn--939a144d.xn--hu5b25b77nvwc.xn--3e0b707e";
 const TOKEN_KEY = "accessToken";
+const ROLE_KEY = "userRole";
 const REQUEST_TIMEOUT_MS = 12_000;
+
+export type SessionRole = "CUSTOMER" | "STAFF";
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "" : DEFAULT_API_BASE_URL)
@@ -31,8 +34,24 @@ export function setAccessToken(token: string) {
   window.sessionStorage.setItem(TOKEN_KEY, token);
 }
 
+export function setSessionRole(role: SessionRole) {
+  window.sessionStorage.setItem(ROLE_KEY, role);
+  window.sessionStorage.removeItem("isLoggedIn");
+  window.sessionStorage.removeItem("isStaff");
+  window.sessionStorage.setItem(role === "STAFF" ? "isStaff" : "isLoggedIn", "true");
+}
+
+export function getSessionRole(): SessionRole | null {
+  const role = window.sessionStorage.getItem(ROLE_KEY);
+  if (role === "CUSTOMER" || role === "STAFF") return role;
+  if (window.sessionStorage.getItem("isStaff") === "true") return "STAFF";
+  if (window.sessionStorage.getItem("isLoggedIn") === "true") return "CUSTOMER";
+  return null;
+}
+
 export function clearSession() {
   window.sessionStorage.removeItem(TOKEN_KEY);
+  window.sessionStorage.removeItem(ROLE_KEY);
   window.sessionStorage.removeItem("isLoggedIn");
   window.sessionStorage.removeItem("isStaff");
   window.sessionStorage.removeItem("showTravelHistory");

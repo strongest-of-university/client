@@ -31,7 +31,7 @@ export function signup(payload: { loginId: string; password: string; name: strin
 }
 
 export function getMyProfile() {
-  return apiRequest<UserProfile>("/api/v1/user/me");
+  return apiRequest<UserProfile>("/api/v1/user/me", { cache: "no-store" });
 }
 
 export function updateMyProfile(payload: Pick<UserProfile, "name" | "phoneNumber" | "address">) {
@@ -134,6 +134,7 @@ export type BookingStatus = "PENDING_CONFIRMATION" | "CONFIRMED" | "IN_PROGRESS"
 export type BookingDto = {
   bookingId: number;
   bookingStatus: BookingStatus;
+  cancellable?: boolean;
   bookedAt?: string;
   travelProduct?: { id?: number; name?: string; title?: string; theme?: string } | string;
   travelProductName?: string;
@@ -158,27 +159,9 @@ export type BookingPageResponse = {
   content?: BookingDto[];
 };
 
-const LAST_CREATED_BOOKING_KEY = "lastCreatedBooking";
-
-function readLastCreatedBooking() {
-  try {
-    const stored = window.sessionStorage.getItem(LAST_CREATED_BOOKING_KEY);
-    return stored ? JSON.parse(stored) as BookingDto : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function getMyBookings() {
-  const result = await apiRequest<BookingPageResponse | BookingDto[]>("/api/v1/bookings/me?page=0");
-  const bookings = Array.isArray(result) ? result : result.bookings ?? result.content ?? [];
-  const lastCreated = readLastCreatedBooking();
-  if (!lastCreated?.bookingId) return bookings;
-  if (bookings.some((booking) => booking.bookingId === lastCreated.bookingId)) {
-    window.sessionStorage.removeItem(LAST_CREATED_BOOKING_KEY);
-    return bookings;
-  }
-  return [lastCreated, ...bookings];
+  const result = await apiRequest<BookingPageResponse | BookingDto[]>("/api/v1/bookings/me/history");
+  return Array.isArray(result) ? result : result.bookings ?? result.content ?? [];
 }
 
 export function getBooking(bookingId: number) {
@@ -248,9 +231,6 @@ export async function createBooking(selection: BookingSelection, cardNumber: str
     bookingId: response.bookingId,
     bookingStatus: response.bookingStatus ?? "PENDING_CONFIRMATION",
   };
-  if (booking?.bookingId) {
-    window.sessionStorage.setItem(LAST_CREATED_BOOKING_KEY, JSON.stringify(booking));
-  }
   return booking;
 }
 
