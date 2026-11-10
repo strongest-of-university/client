@@ -27,6 +27,7 @@ export function getAccessToken() {
 }
 
 export function setAccessToken(token: string) {
+  if (window.sessionStorage.getItem(TOKEN_KEY) !== token) window.sessionStorage.removeItem("voiceReservationConversation");
   window.sessionStorage.setItem(TOKEN_KEY, token);
 }
 
@@ -36,6 +37,7 @@ export function clearSession() {
   window.sessionStorage.removeItem("isStaff");
   window.sessionStorage.removeItem("showTravelHistory");
   window.sessionStorage.removeItem("showReservationOptions");
+  window.sessionStorage.removeItem("voiceReservationConversation");
 }
 
 function readMessage(body: unknown, fallback: string) {
