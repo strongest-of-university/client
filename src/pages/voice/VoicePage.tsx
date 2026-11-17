@@ -5,6 +5,7 @@ import Footer from "../../components/Footer";
 import { getErrorMessage } from "../../api/client";
 import { sendVoiceAudio, sendVoiceText, type VoiceContext, type VoiceResponse } from "../../api/voice";
 import type { TravelProduct } from "../../api/services";
+import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
 import { needsConditionChange } from "./retryConditions";
 import { readVoiceConversation, writeVoiceConversation, VOICE_SESSION_KEY, type Message, type VoiceConversation } from "./voiceSession";
 import * as S from "./VoicePage.styles";
@@ -45,6 +46,7 @@ const productStatusLabels: Record<TravelProduct["status"], string> = {
 const initialMessage: Message = { role: "assistant", text: "안녕하세요! 어떤 여행을 원하시나요? 테마, 출발일, 인원 등을 말씀하거나 입력해 주세요." };
 
 export default function VoicePage() {
+  const { saveBookingDraft } = useBookingDraft();
   const [conversation, setConversation] = useState<VoiceConversation>(() =>
     readVoiceConversation(window.sessionStorage) ?? { messages: [initialMessage], context: { draft: {} }, products: [], needsRetry: false },
   );
@@ -227,8 +229,7 @@ export default function VoicePage() {
   }
 
   function selectProduct(product: TravelProduct) {
-    window.sessionStorage.setItem("selectedTravelProductId", String(product.travelProductId));
-    window.sessionStorage.setItem("voiceBookingDraft", JSON.stringify(context.draft));
+    saveBookingDraft(product.travelProductId, context.draft);
     window.location.assign("/booking");
   }
 

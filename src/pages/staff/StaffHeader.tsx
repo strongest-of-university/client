@@ -1,9 +1,11 @@
 import * as S from "./StaffPage.styles";
-import { clearSession } from "../../api/client";
+import { useAuth } from "../../contexts/auth/authContext";
 
 export default function StaffHeader({ current }: { current: "product" | "reservation" | "stock" | "sms" }) {
+  const { signOut } = useAuth();
+
   function logout() {
-    clearSession();
+    signOut();
     window.location.assign("/login");
   }
 

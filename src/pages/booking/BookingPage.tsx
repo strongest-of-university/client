@@ -1,10 +1,10 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import type { VoiceDraft } from "../../api/voice";
 import { createBooking, getTravelProduct, getTravelProducts, previewBooking, type BookingPreview, type BookingSelection, type ThemeCode, type TravelProduct } from "../../api/services";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
+import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
 import * as S from "./BookingPage.styles";
 
 type Grade = {
@@ -172,6 +172,7 @@ const PRODUCT_STATUS_LABEL: Record<TravelProduct["status"], string> = {
 };
 
 export default function BookingPage() {
+  const { consumeBookingDraft } = useBookingDraft();
   const [themeId, setThemeId] = useState("");
   const [scheduleId, setScheduleId] = useState("");
   const [people, setPeople] = useState(2);
@@ -267,7 +268,8 @@ export default function BookingPage() {
         if (!active) return;
         const next = Object.fromEntries(entries) as Record<ThemeCode, TravelProduct[]>;
         setProductsByTheme(next);
-        const savedId = Number(window.sessionStorage.getItem("selectedTravelProductId"));
+        const savedBookingDraft = consumeBookingDraft();
+        const savedId = savedBookingDraft.travelProductId;
         if (savedId) {
           const matched = entries.find(([, products]) => products.some((product) => product.travelProductId === savedId));
           if (matched) {
@@ -277,10 +279,10 @@ export default function BookingPage() {
             const selectedProduct = matched[1].find((product) => product.travelProductId === savedId);
             const capacity = Math.max(0, Math.min(10, selectedProduct?.remainingCapacity ?? 0));
             if (capacity > 0) setPeople((current) => clampPeople(current, capacity, selectedThemeId === "honeymoon"));
-            const savedDraft = window.sessionStorage.getItem("voiceBookingDraft");
+            const savedDraft = savedBookingDraft.voiceDraft;
             if (savedDraft) {
               try {
-                const draft = JSON.parse(savedDraft) as VoiceDraft;
+                const draft = savedDraft;
                 const selectedTheme = themes.find((item) => item.id === selectedThemeId);
                 const matchedGrade = selectedTheme?.grades.find((item) => item.id.toUpperCase() === draft.tourLevel && !item.unavailable);
                 if (matchedGrade) {
@@ -296,9 +298,7 @@ export default function BookingPage() {
                 if (draft.selectedDrink === 1 || draft.selectedDrink === 3) setDrinkOptions(draft.selectedDrink === 3 ? ["샴페인", "커피"] : ["샴페인"]);
                 else if (draft.selectedDrink === 2) setDrinkOptions(["커피"]);
               } catch { /* Invalid saved draft is ignored. */ }
-              window.sessionStorage.removeItem("voiceBookingDraft");
             }
-            window.sessionStorage.removeItem("selectedTravelProductId");
           }
         }
       })
@@ -306,7 +306,7 @@ export default function BookingPage() {
         if (active) setSubmitMessage(`상품 일정을 불러오지 못했습니다. ${getErrorMessage(error)}`);
       });
     return () => { active = false; };
-  }, []);
+  }, [consumeBookingDraft]);
 
   useEffect(() => {
     if (!selectionKey) return;

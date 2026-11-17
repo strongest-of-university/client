@@ -1,6 +1,6 @@
 import Header from "../../components/Header";
-import { getAccessToken, getSessionRole } from "../../api/client";
 import { getMyBookings, getMyProfile, type BookingDto } from "../../api/services";
+import { useAuth } from "../../contexts/auth/authContext";
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";
 import { notices } from "../notices/notices";
@@ -37,6 +37,7 @@ type TravelHistoryGroup = {
 };
 
 export default function HomePage() {
+  const { isCustomer: isLoggedIn } = useAuth();
   const [slide, setSlide] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(
     () => window.sessionStorage.getItem("showTravelHistory") === "true",
@@ -47,7 +48,6 @@ export default function HomePage() {
   const [reservationItems, setReservationItems] = useState<HomeReservation[]>([]);
   const [historyItems, setHistoryItems] = useState<TravelHistoryGroup[]>([]);
   const [profileName, setProfileName] = useState("고객");
-  const isLoggedIn = Boolean(getAccessToken()) && getSessionRole() === "CUSTOMER";
   const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

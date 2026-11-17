@@ -1,11 +1,15 @@
 import Header from "../../components/Header";
 import { useEffect, useState } from "react";
-import { getAccessToken, getErrorMessage } from "../../api/client";
+import { getErrorMessage } from "../../api/client";
 import { getTravelProduct, getTravelProducts, type ThemeCode } from "../../api/services";
+import { useAuth } from "../../contexts/auth/authContext";
+import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
 import * as S from "./ThemeDetailPage.styles";
 import { themeLinks, type ThemeDetail } from "./themeDetails";
 
 export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
+  const { isAuthenticated } = useAuth();
+  const { saveBookingDraft } = useBookingDraft();
   const { features } = theme;
   const otherThemes = themeLinks.filter((item) => item.id !== theme.id);
   const [selectedDeparture, setSelectedDeparture] = useState<string | null>(null);
@@ -40,15 +44,15 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
         if (!active) return;
         setDepartures([]);
         setTourStyles([]);
-        setMessage(getAccessToken() ? getErrorMessage(error) : "로그인하면 모집 중인 여행 상품을 확인할 수 있습니다.");
+        setMessage(isAuthenticated ? getErrorMessage(error) : "로그인하면 모집 중인 여행 상품을 확인할 수 있습니다.");
       });
     return () => { active = false; };
-  }, [theme]);
+  }, [theme, isAuthenticated]);
 
   function reserve(departureId: string) {
     setSelectedDeparture(departureId);
-    window.sessionStorage.setItem("selectedTravelProductId", departureId);
-    window.location.assign(getAccessToken() ? "/booking" : "/reservation");
+    saveBookingDraft(Number(departureId));
+    window.location.assign(isAuthenticated ? "/booking" : "/reservation");
   }
 
   return (

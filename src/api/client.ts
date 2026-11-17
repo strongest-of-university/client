@@ -3,6 +3,8 @@ const TOKEN_KEY = "accessToken";
 const ROLE_KEY = "userRole";
 const REQUEST_TIMEOUT_MS = 12_000;
 
+export const AUTH_SESSION_CHANGED_EVENT = "auth-session-changed";
+
 export type SessionRole = "CUSTOMER" | "STAFF";
 
 export const API_BASE_URL = (
@@ -32,6 +34,7 @@ export function getAccessToken() {
 export function setAccessToken(token: string) {
   if (window.sessionStorage.getItem(TOKEN_KEY) !== token) window.sessionStorage.removeItem("voiceReservationConversation");
   window.sessionStorage.setItem(TOKEN_KEY, token);
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
 }
 
 export function setSessionRole(role: SessionRole) {
@@ -39,6 +42,7 @@ export function setSessionRole(role: SessionRole) {
   window.sessionStorage.removeItem("isLoggedIn");
   window.sessionStorage.removeItem("isStaff");
   window.sessionStorage.setItem(role === "STAFF" ? "isStaff" : "isLoggedIn", "true");
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
 }
 
 export function getSessionRole(): SessionRole | null {
@@ -57,6 +61,7 @@ export function clearSession() {
   window.sessionStorage.removeItem("showTravelHistory");
   window.sessionStorage.removeItem("showReservationOptions");
   window.sessionStorage.removeItem("voiceReservationConversation");
+  window.dispatchEvent(new Event(AUTH_SESSION_CHANGED_EVENT));
 }
 
 function readMessage(body: unknown, fallback: string) {
