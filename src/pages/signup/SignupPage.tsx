@@ -1,7 +1,7 @@
 import Header from "../../components/Header";
 import { useState, type FormEvent } from "react";
 import { getErrorMessage } from "../../api/client";
-import { signup } from "../../api/services";
+import { signup } from "../../services/authService";
 import * as S from "./SignupPage.styles";
 
 type SignupFields = {

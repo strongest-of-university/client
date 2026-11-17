@@ -1,5 +1,6 @@
 import Header from "../../components/Header";
-import { getMyBookings, getMyProfile, type BookingDto } from "../../api/services";
+import { getMyBookings, type BookingDto } from "../../services/bookingService";
+import { getMyProfile } from "../../services/userService";
 import { useAuth } from "../../contexts/auth/authContext";
 import { useEffect, useRef, useState } from "react";
 import * as S from "./HomePage.styles";

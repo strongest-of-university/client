@@ -1,5 +1,5 @@
-import { apiRequest } from "./client";
-import type { ThemeCode, TravelProduct } from "./services";
+import { apiRequest } from "../api/client";
+import type { ThemeCode, TravelProduct } from "./travelProductService";
 
 export type VoiceDraft = {
   theme?: ThemeCode | null;
@@ -12,6 +12,7 @@ export type VoiceDraft = {
   selectedMeal?: number | null;
   selectedDrink?: number | null;
 };
+
 export type VoiceResponse = {
   transcript?: string;
   draft: VoiceDraft;
@@ -21,11 +22,13 @@ export type VoiceResponse = {
   validationMessages?: string[];
   fieldsComplete?: boolean;
 };
+
 export type VoiceContext = { draft: VoiceDraft; lastQuestion?: string | null };
 
 export function sendVoiceText(text: string, context: VoiceContext) {
   return apiRequest<VoiceResponse>("/api/v1/voice/text", { method: "POST", body: JSON.stringify({ text, context }) }, 60_000);
 }
+
 export function sendVoiceAudio(audio: Blob, context: VoiceContext) {
   const form = new FormData();
   const type = audio.type.toLowerCase();

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { VoiceDraft } from "../../api/voice";
+import type { VoiceDraft } from "../../services/voiceService";
 
 export type BookingDraft = {
   travelProductId: number | null;

@@ -1,7 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import { createBooking, getTravelProduct, getTravelProducts, previewBooking, type BookingPreview, type BookingSelection, type ThemeCode, type TravelProduct } from "../../api/services";
+import { createBooking, previewBooking, type BookingPreview, type BookingSelection } from "../../services/bookingService";
+import { getTravelProduct, getTravelProducts, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";

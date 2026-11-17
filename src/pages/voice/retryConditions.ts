@@ -1,4 +1,4 @@
-import type { VoiceResponse } from "../../api/voice";
+import type { VoiceResponse } from "../../services/voiceService";
 
 export function needsConditionChange(response: VoiceResponse): boolean {
   const message = response.productMessage ?? "";

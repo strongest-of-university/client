@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
-import type { VoiceDraft } from "../../api/voice";
+import type { VoiceDraft } from "../../services/voiceService";
 import { BookingDraftContext, type BookingDraft, type BookingDraftContextValue } from "./bookingDraftContext";
 
 const PRODUCT_KEY = "selectedTravelProductId";

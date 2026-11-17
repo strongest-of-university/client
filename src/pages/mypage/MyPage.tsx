@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { FiChevronDown } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import { cancelBooking, getBooking, getMyBookings, getMyProfile, updateMyProfile, type BookingDto, type UserProfile } from "../../api/services";
+import { cancelBooking, getBooking, getMyBookings, type BookingDto } from "../../services/bookingService";
+import { getMyProfile, updateMyProfile, type UserProfile } from "../../services/userService";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import * as S from "./MyPage.styles";

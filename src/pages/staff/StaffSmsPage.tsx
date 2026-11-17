@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { getNotifications } from "../../api/services";
+import { getNotifications } from "../../services/notificationService";
 import StaffHeader from "./StaffHeader";
 import * as S from "./StaffSmsPage.styles";
 

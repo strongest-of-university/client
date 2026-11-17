@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { getTravelProductBookings, getTravelProducts, type ThemeCode, type TravelProduct, type TravelProductBooking } from "../../api/services";
+import { getTravelProductBookings, type TravelProductBooking } from "../../services/bookingService";
+import { getTravelProducts, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
 import StaffHeader from "./StaffHeader";
 import * as S from "./StaffReservationPage.styles";
 

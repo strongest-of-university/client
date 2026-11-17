@@ -1,7 +1,7 @@
 import Header from "../../components/Header";
 import { useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { getTravelProduct, getTravelProducts, type ThemeCode } from "../../api/services";
+import { getTravelProduct, getTravelProducts, type ThemeCode } from "../../services/travelProductService";
 import { useAuth } from "../../contexts/auth/authContext";
 import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
 import * as S from "./ThemeDetailPage.styles";

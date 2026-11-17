@@ -1,5 +1,5 @@
-import type { TravelProduct } from "../../api/services";
-import type { VoiceContext } from "../../api/voice";
+import type { TravelProduct } from "../../services/travelProductService";
+import type { VoiceContext } from "../../services/voiceService";
 
 export const VOICE_SESSION_KEY = "voiceReservationConversation";
 export type Message = { role: "assistant" | "user"; text: string };

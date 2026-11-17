@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { changeInventory, getInventory, type InventoryApiItem } from "../../api/services";
+import { changeInventory, getInventory, type InventoryApiItem } from "../../services/inventoryService";
 import StaffHeader from "./StaffHeader";
 import { loadInventory, saveInventory, type Inventory, type InventoryId } from "./staffInventory";
 import * as S from "./StaffStockPage.styles";

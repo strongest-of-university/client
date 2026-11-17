@@ -8,7 +8,8 @@ import {
   setSessionRole,
   type SessionRole,
 } from "../../api/client";
-import { getMyProfile, login } from "../../api/services";
+import { login } from "../../services/authService";
+import { getMyProfile } from "../../services/userService";
 import { AuthContext, type AuthContextValue } from "./authContext";
 
 function readSession() {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { FiAlertTriangle, FiChevronDown } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import { createTravelProduct, deleteTravelProduct, getTravelProduct, getTravelProducts, type ThemeCode, type TravelProduct } from "../../api/services";
+import { createTravelProduct, deleteTravelProduct, getTravelProduct, getTravelProducts, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
 import Modal from "../../components/Modal";
 import StaffHeader from "./StaffHeader";
 import { loadInventory, type InventoryId } from "./staffInventory";
