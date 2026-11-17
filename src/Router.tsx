@@ -1,3 +1,4 @@
+import { useEffect, type ReactNode } from 'react'
 import Home from './pages/home/HomePage'
 import LoginPage from './pages/login/LoginPage'
 import SignupPage from './pages/signup/SignupPage'
@@ -19,26 +20,26 @@ export default function Router() {
   const { isStaff: staffAuthenticated, isCustomer: customerAuthenticated } = useAuth()
 
   if (pathname === '/staff/reservations') {
-    return staffAuthenticated ? <StaffReservationPage /> : <LoginPage />
+    return <RouteGuard allowed={staffAuthenticated} returnTo={pathname}><StaffReservationPage /></RouteGuard>
   }
   if (pathname === '/staff/stock') {
-    return staffAuthenticated ? <StaffStockPage /> : <LoginPage />
+    return <RouteGuard allowed={staffAuthenticated} returnTo={pathname}><StaffStockPage /></RouteGuard>
   }
   if (pathname === '/staff/sms') {
-    return staffAuthenticated ? <StaffSmsPage /> : <LoginPage />
+    return <RouteGuard allowed={staffAuthenticated} returnTo={pathname}><StaffSmsPage /></RouteGuard>
   }
   if (pathname === '/staff') {
-    return staffAuthenticated ? <StaffPage /> : <LoginPage />
+    return <RouteGuard allowed={staffAuthenticated} returnTo={pathname}><StaffPage /></RouteGuard>
   }
 
   if (pathname === '/mypage') {
-    return customerAuthenticated ? <MyPage /> : <LoginPage />
+    return <RouteGuard allowed={customerAuthenticated} returnTo={pathname}><MyPage /></RouteGuard>
   }
   if (pathname === '/voice') {
-    return customerAuthenticated ? <VoicePage /> : <LoginPage reservationRequired />
+    return <RouteGuard allowed={customerAuthenticated} returnTo={pathname}><VoicePage /></RouteGuard>
   }
   if (pathname === '/booking') {
-    return customerAuthenticated ? <BookingPage /> : <LoginPage reservationRequired />
+    return <RouteGuard allowed={customerAuthenticated} returnTo={pathname}><BookingPage /></RouteGuard>
   }
   if (pathname === '/signup') {
     return <SignupPage />
@@ -54,10 +55,11 @@ export default function Router() {
     return <ThemeDetailPage key="healing" theme={healingTheme} />
   }
   if (pathname === '/login') {
-    return <LoginPage />
+    const returnTo = safeReturnTo(new URLSearchParams(window.location.search).get('redirect'))
+    return <LoginPage returnTo={returnTo} reservationRequired={returnTo === '/voice' || returnTo === '/booking' || returnTo === '/reservation'} />
   }
   if (pathname === '/reservation') {
-    return <LoginPage reservationRequired />
+    return <RouteGuard allowed={customerAuthenticated} returnTo={pathname}><ReservationEntry /></RouteGuard>
   }
   if (pathname === '/themes/golf') {
     return <ThemeDetailPage key="golf" theme={golfTheme} />
@@ -66,4 +68,28 @@ export default function Router() {
     return <ThemeDetailPage key="trekking" theme={trekkingTheme} />
   }
   return <Home />
+}
+
+function RouteGuard({ allowed, returnTo, children }: { allowed: boolean; returnTo: string; children: ReactNode }) {
+  useEffect(() => {
+    if (!allowed) {
+      window.location.replace(`/login?redirect=${encodeURIComponent(returnTo)}`)
+    }
+  }, [allowed, returnTo])
+
+  return allowed ? children : null
+}
+
+function ReservationEntry() {
+  useEffect(() => {
+    window.sessionStorage.setItem('showReservationOptions', 'true')
+    window.location.replace('/')
+  }, [])
+
+  return null
+}
+
+function safeReturnTo(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return undefined
+  return value
 }

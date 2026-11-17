@@ -4,7 +4,12 @@ import { getErrorMessage } from "../../api/client";
 import { useAuth } from "../../contexts/auth/authContext";
 import * as S from "./LoginPage.styles";
 
-export default function LoginPage({ reservationRequired = false }: { reservationRequired?: boolean }) {
+type LoginPageProps = {
+  reservationRequired?: boolean;
+  returnTo?: string;
+};
+
+export default function LoginPage({ reservationRequired = false, returnTo }: LoginPageProps) {
   const { signIn, signOut } = useAuth();
   const [message, setMessage] = useState(() =>
     new URLSearchParams(window.location.search).get("signup") === "success"
@@ -25,7 +30,12 @@ export default function LoginPage({ reservationRequired = false }: { reservation
       const role = await signIn(loginId, password);
 
       if (role === "STAFF") {
-        window.location.assign("/staff");
+        window.location.assign(returnTo?.startsWith("/staff") ? returnTo : "/staff");
+        return;
+      }
+
+      if (returnTo && returnTo !== "/reservation" && !returnTo.startsWith("/staff")) {
+        window.location.assign(returnTo);
         return;
       }
 
