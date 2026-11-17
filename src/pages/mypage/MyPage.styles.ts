@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 export const Page = styled.div`
   min-height: 100vh;
-  background: #fffdf8;
+  background: var(--color-background);
 `;
 
 export const Main = styled.main`
@@ -47,7 +47,7 @@ export const MyPageTab = styled.button<{ $active: boolean }>`
   min-height: 44px;
   padding: 10px 12px 12px;
   border: 0;
-  color: ${({ $active }) => ($active ? "#1d1c1a" : "#8a837b")};
+  color: ${({ $active }) => ($active ? "var(--color-text)" : "#8a837b")};
   background: transparent;
   font-size: 12px;
   font-weight: ${({ $active }) => ($active ? 800 : 600)};
@@ -60,13 +60,13 @@ export const MyPageTab = styled.button<{ $active: boolean }>`
     bottom: -1px;
     left: 0;
     height: 2px;
-    background: #1d1c1a;
+    background: var(--color-text);
     transform: scaleX(${({ $active }) => ($active ? 1 : 0)});
     transition: transform 0.25s ease;
   }
 
   &:hover {
-    color: #1d1c1a;
+    color: var(--color-text);
     background: rgba(29, 28, 26, 0.035);
   }
 
@@ -82,14 +82,14 @@ export const ProfileEditButton = styled.button`
   min-height: 42px;
   margin-bottom: 4px;
   padding: 9px 14px;
-  border: 1px solid #1d1c1a;
+  border: 1px solid var(--color-text);
   border-radius: 7px;
-  color: #1d1c1a;
-  background: #fffdf8;
+  color: var(--color-text);
+  background: var(--color-background);
   font-size: 10px;
   font-weight: 700;
 
-  &:hover:not(:disabled) { color: #fff; background: #1d1c1a; }
+  &:hover:not(:disabled) { color: var(--color-surface); background: var(--color-text); }
   &:focus-visible { outline: 2px solid #786c5d; outline-offset: 2px; }
   &:disabled { opacity: 0.45; cursor: wait; }
 `;
@@ -101,7 +101,7 @@ export const ProfileCard = styled.section`
   padding: 13px 14px;
   border: 1px solid #ded5c8;
   border-radius: 11px;
-  background: #fff;
+  background: var(--color-surface);
 
   div {
     display: grid;
@@ -140,7 +140,7 @@ export const TimelineItem = styled.li`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #1d1c1a;
+    background: var(--color-text);
   }
 
   &::after {
@@ -168,7 +168,7 @@ export const Card = styled.article`
   padding: 14px;
   border: 1px solid #ded5c8;
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface);
 `;
 
 export const StatusRow = styled.div`
@@ -211,7 +211,7 @@ export const OptionButton = styled.button<{ $open: boolean }>`
   padding: 10px 12px;
   border: 0;
   border-radius: 8px;
-  color: #1d1c1a;
+  color: var(--color-text);
   background: #f6f6f6;
   font-size: 10px;
   text-align: left;
@@ -229,7 +229,7 @@ export const OptionButton = styled.button<{ $open: boolean }>`
   }
 
   &:focus-visible {
-    outline: 2px solid #1d1c1a;
+    outline: 2px solid var(--color-text);
     outline-offset: 2px;
   }
 
@@ -288,13 +288,13 @@ export const CancelButton = styled.button`
   margin-top: 11px;
   border: 0;
   border-radius: 7px;
-  color: #fff;
-  background: #1d1c1a;
+  color: var(--color-surface);
+  background: var(--color-text);
   font-size: 11px;
   font-weight: 700;
 
   &:hover:not(:disabled) {
-    background: #33312e;
+    background: var(--color-text-strong);
   }
 
   &:focus-visible {
@@ -349,8 +349,8 @@ export const ProfileField = styled.div`
     padding: 11px 13px;
     border: 1px solid #ddd1c1;
     border-radius: 9px;
-    color: #1d1c1a;
-    background: #fffdf8;
+    color: var(--color-text);
+    background: var(--color-background);
     font: inherit;
     font-size: 14px;
   }
@@ -408,7 +408,7 @@ export const RefundBox = styled.div`
     border-top: 1px solid #dcd2c5;
 
     span, strong {
-      color: #1d1c1a;
+      color: var(--color-text);
       font-weight: 700;
     }
   }
@@ -432,24 +432,24 @@ export const BackButton = styled.button`
   min-height: 54px;
   border: 1px solid #ddd1c1;
   border-radius: 12px;
-  color: #1d1c1a;
-  background: #fffdf8;
+  color: var(--color-text);
+  background: var(--color-background);
   font-size: 15px;
   font-weight: 700;
 `;
 
 export const ConfirmCancelButton = styled(BackButton)`
   border-color: #aa3c20;
-  color: #fff;
+  color: var(--color-surface);
   background: #aa3c20;
 
   &:hover { background: #8f3018; }
 `;
 
 export const SaveProfileButton = styled(BackButton)`
-  border-color: #1d1c1a;
-  color: #fff;
-  background: #1d1c1a;
+  border-color: var(--color-text);
+  color: var(--color-surface);
+  background: var(--color-text);
 
   &:hover:not(:disabled) { background: #39352f; }
   &:disabled { opacity: 0.55; cursor: wait; }

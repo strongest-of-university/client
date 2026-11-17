@@ -2,8 +2,8 @@ import styled from "styled-components";
 
 export const HomePage = styled.div`
   min-height: 100vh;
-  background: #fffdf8;
-  color: #1d1c1a;
+  background: var(--color-background);
+  color: var(--color-text);
 `;
 
 export const Hero = styled.section`
@@ -48,7 +48,7 @@ export const Dot = styled.button<{ $active: boolean }>`
   padding: 0;
   border: 0;
   border-radius: 10px;
-  background: #fffdf8;
+  background: var(--color-background);
   opacity: ${({ $active }) => ($active ? 1 : 0.4)};
   transition:
     width 0.7s ease,
@@ -69,7 +69,7 @@ export const SectionHeading = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  border-bottom: 1px solid #1d1c1a;
+  border-bottom: 1px solid var(--color-text);
   padding-bottom: 14px;
   h2 {
     font:
@@ -83,17 +83,17 @@ export const NoticeRow = styled.div`
   justify-content: space-between;
   gap: 16px;
   padding: 16px 0;
-  border-bottom: 1px solid #eae4d8;
+  border-bottom: 1px solid var(--color-divider);
   font-size: 14px;
   time {
-    color: #6b665d;
+    color: var(--color-text-muted);
     font-size: 12px;
     white-space: nowrap;
   }
 `;
 export const GuestCard = styled.div`
   padding: 20px 0;
-  border-bottom: 1px solid #eae4d8;
+  border-bottom: 1px solid var(--color-divider);
   p {
     line-height: 1.7;
     font-size: 15px;
@@ -107,7 +107,7 @@ export const ReservationRow = styled.article`
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  border-bottom: 1px solid #eae4d8;
+  border-bottom: 1px solid var(--color-divider);
 
   @media (max-width: 600px) {
     align-items: flex-start;
@@ -123,7 +123,7 @@ export const ReservationTitle = styled.h3`
 `;
 export const ReservationDetails = styled.p`
   margin: 0;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 13px;
   line-height: 1.6;
   word-break: keep-all;
@@ -131,10 +131,10 @@ export const ReservationDetails = styled.p`
 export const StatusBadge = styled.span<{ $confirmed: boolean }>`
   flex: 0 0 auto;
   padding: 5px 12px;
-  border: 1px solid #1d1c1a;
+  border: 1px solid var(--color-text);
   border-radius: 999px;
-  background: ${({ $confirmed }) => ($confirmed ? "#1d1c1a" : "transparent")};
-  color: ${({ $confirmed }) => ($confirmed ? "#fffdf8" : "#1d1c1a")};
+  background: ${({ $confirmed }) => ($confirmed ? "var(--color-text)" : "transparent")};
+  color: ${({ $confirmed }) => ($confirmed ? "var(--color-background)" : "var(--color-text)")};
   font-size: 12px;
   font-weight: 700;
   line-height: 1.4;
@@ -142,7 +142,7 @@ export const StatusBadge = styled.span<{ $confirmed: boolean }>`
 `;
 export const HistorySubtitle = styled.p`
   margin: -12px 0 20px;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 14px;
 `;
 export const HistoryList = styled.div`
@@ -175,7 +175,7 @@ export const TripItem = styled.li`
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #1d1c1a;
+    background: var(--color-text);
   }
 
   &:last-child { padding-bottom: 0; }
@@ -206,7 +206,7 @@ export const TripDetails = styled.dl`
     gap: 2px;
   }
 
-  dt { color: #6b665d; }
+  dt { color: var(--color-text-muted); }
   dd { margin: 0; }
 `;
 export const MoreTripsButton = styled.button`
@@ -215,15 +215,15 @@ export const MoreTripsButton = styled.button`
   margin-top: 30px;
   border: 0;
   border-radius: 14px;
-  background: #1d1c1a;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-surface);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
 
   span { margin-left: 8px; font-size: 20px; }
   &:hover { background: #39352f; }
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 `;
 export const ReservationOptionGrid = styled.div`
   display: grid;
@@ -241,10 +241,10 @@ export const ReservationOption = styled.button`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  border: 1px solid #1d1c1a;
+  border: 1px solid var(--color-text);
   border-radius: 16px;
-  background: #fff;
-  color: #1d1c1a;
+  background: var(--color-surface);
+  color: var(--color-text);
   text-align: left;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
@@ -280,7 +280,7 @@ export const ReservationOption = styled.button`
 `;
 export const ReservationOptionMessage = styled.p`
   margin: 14px 0 0;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 13px;
   text-align: center;
 
@@ -293,21 +293,21 @@ export const PrimaryLink = styled.a`
   text-align: center;
   text-decoration: none;
   border: 0;
-  background: #1d1c1a;
-  color: #fffdf8;
+  background: var(--color-text);
+  color: var(--color-background);
   padding: 16px;
 `;
 export const ThemePreview = styled.section`
   padding: 1px 50px 30px;
   text-align: center;
-  background: #fffdf8;
+  background: var(--color-background);
   h2 {
     font:
       600 36px "Cormorant Garamond",
       serif;
   }
   a {
-    color: #1d1c1a;
+    color: var(--color-text);
   }
 `;
 export const Eyebrow = styled.p`
@@ -333,7 +333,7 @@ export const MoreButton = styled.a`
   background: none;
   color: inherit;
   text-decoration: none;
-  border: 1px solid #1d1c1a;
+  border: 1px solid var(--color-text);
   padding: 3px 8px;
   font-size: 12px;
   line-height: 1.5;
@@ -343,11 +343,11 @@ export const NoticeText = styled.a`
   text-decoration: none;
 
   &:hover { text-decoration: underline; text-underline-offset: 3px; }
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 `;
 export const NoticeLabel = styled.b``;
 export const NoticeDate = styled.time`
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 12px;
   white-space: nowrap;
 `;
@@ -390,7 +390,7 @@ export const ThemeTitle = styled.h2`
   }
 `;
 export const ThemeLink = styled.a`
-  color: #1d1c1a;
+  color: var(--color-text);
 `;
 export const ThemeStack = styled.section`
   scroll-margin-top: 96px;
@@ -400,7 +400,7 @@ export const ThemeCard = styled.article<{ $image: string }>`
   scroll-margin-top: 88px;
   min-height: 520px;
   overflow: hidden;
-  color: #fffdf8;
+  color: var(--color-background);
   background: url(${({ $image }) => $image}) center / cover no-repeat;
 
   @media (prefers-reduced-motion: no-preference) {
@@ -460,8 +460,8 @@ export const ThemeDescription = styled.p`
 `;
 export const ThemeMore = styled.a`
   padding: 11px 31px;
-  border: 1px solid #fffdf8;
-  color: #fffdf8;
+  border: 1px solid var(--color-background);
+  color: var(--color-background);
   text-decoration: none;
   font:
     600 17px "Cormorant Garamond",
@@ -471,8 +471,8 @@ export const ThemeMore = styled.a`
     background-color 0.25s ease,
     color 0.25s ease;
   &:hover {
-    background: #fffdf8;
-    color: #1d1c1a;
+    background: var(--color-background);
+    color: var(--color-text);
   }
 `;
 
@@ -483,7 +483,7 @@ export const HeroCopy = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #fffdf8;
+  color: var(--color-background);
   text-align: center;
   .eyebrow {
     font:
@@ -503,8 +503,8 @@ export const HeroCopy = styled.div`
 export const ReservationButton = styled.a`
   margin-top: 42px;
   padding: 12px 32px;
-  border: 1px solid #fffdf8;
-  color: #fffdf8;
+  border: 1px solid var(--color-background);
+  color: var(--color-background);
   background: rgba(20, 20, 20, 0.05);
   text-decoration: none;
   font-weight: 600;
@@ -512,7 +512,7 @@ export const ReservationButton = styled.a`
     background-color 0.25s ease,
     color 0.25s ease;
   &:hover {
-    background: #fffdf8;
-    color: #1d1c1a;
+    background: var(--color-background);
+    color: var(--color-text);
   }
 `;

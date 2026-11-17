@@ -2,8 +2,8 @@ import styled from "styled-components";
 
 export const Page = styled.div`
   min-height: 100vh;
-  background: #fff;
-  color: #1d1c1a;
+  background: var(--color-surface);
+  color: var(--color-text);
 `;
 
 export const Main = styled.main`
@@ -32,7 +32,7 @@ export const Field = styled.div`
 `;
 
 export const Label = styled.label`
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 14px;
 `;
 
@@ -43,21 +43,21 @@ export const Input = styled.input`
   border: 1px solid #dfd4c4;
   border-radius: 11px;
   background: #fffdf9;
-  color: #1d1c1a;
+  color: var(--color-text);
   font: inherit;
   font-size: 16px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:focus-visible {
     outline: none;
-    border-color: #88745a;
+    border-color: var(--color-accent);
     box-shadow: 0 0 0 3px rgba(136, 116, 90, 0.15);
   }
 
   &:autofill,
   &:-webkit-autofill {
-    -webkit-text-fill-color: #1d1c1a;
-    caret-color: #1d1c1a;
+    -webkit-text-fill-color: var(--color-text);
+    caret-color: var(--color-text);
     box-shadow: inset 0 0 0 1000px #fffdf9;
   }
 
@@ -82,7 +82,7 @@ export const Feedback = styled.p<{ $valid: boolean }>`
 
 export const HelpText = styled.p`
   margin: 0;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.7;
   word-break: keep-all;
@@ -93,14 +93,14 @@ export const SubmitButton = styled.button`
   margin-top: 10px;
   border: 0;
   border-radius: 12px;
-  background: #1d1c1a;
-  color: #fffdf8;
+  background: var(--color-text);
+  color: var(--color-background);
   font-size: 16px;
   font-weight: 700;
   transition: background-color 0.2s ease;
 
   &:hover { background: #39352f; }
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 4px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; }
 
   &:disabled {
     background: #d9d9d9;
@@ -111,7 +111,7 @@ export const SubmitButton = styled.button`
 
 export const Message = styled.p`
   margin: 20px 0 0;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.6;
   text-align: center;

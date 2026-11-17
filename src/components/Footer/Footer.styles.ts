@@ -2,13 +2,13 @@ import styled from "styled-components";
 
 export const FooterContainer = styled.footer`
   padding: 48px clamp(28px, 4.3vw, 82px);
-  background: #1d1c1a;
+  background: var(--color-text);
   color: #c7c0b4;
 `;
 
 export const FooterBrand = styled.h2`
   margin: 0 0 16px;
-  color: #fffdf8;
+  color: var(--color-background);
   font: 700 20px "Noto Serif KR", serif;
 `;
 

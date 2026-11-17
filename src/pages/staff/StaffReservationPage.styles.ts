@@ -1,21 +1,21 @@
 import styled from "styled-components";
 
-export const Page = styled.div`min-height:100vh;color:#1d1c1a;background:#fff;`;
+export const Page = styled.div`min-height:100vh;color:var(--color-text);background:var(--color-surface);`;
 export const Main = styled.main`width:min(980px,calc(100% - 64px));margin:0 auto;padding:38px 0 70px;@media(max-width:680px){width:min(100% - 28px,980px);}`;
 export const Eyebrow = styled.p`margin:0 0 4px;font:600 13px "Cormorant Garamond",serif;letter-spacing:.22em;`;
 export const Title = styled.h1`margin:0 0 5px;font:700 27px "Noto Serif KR",serif;`;
 export const Description = styled.p`margin:0 0 24px;color:#57514b;font-size:11px;`;
 export const Filters = styled.div`display:flex;flex-wrap:wrap;gap:7px;margin-bottom:22px;`;
-export const FilterButton = styled.button<{ $selected: boolean }>`min-height:31px;padding:0 12px;border:1px solid ${({$selected})=>$selected ? "#1d1c1a" : "#ded6cc"};border-radius:999px;color:${({$selected})=>$selected ? "#fff" : "#1d1c1a"};background:${({$selected})=>$selected ? "#1d1c1a" : "#fff"};font-size:9px;font-weight:700;`;
+export const FilterButton = styled.button<{ $selected: boolean }>`min-height:31px;padding:0 12px;border:1px solid ${({$selected})=>$selected ? "var(--color-text)" : "var(--color-border)"};border-radius:999px;color:${({$selected})=>$selected ? "var(--color-surface)" : "var(--color-text)"};background:${({$selected})=>$selected ? "var(--color-text)" : "var(--color-surface)"};font-size:9px;font-weight:700;`;
 export const Grid = styled.div`display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:13px;@media(max-width:900px){grid-template-columns:repeat(2,minmax(0,1fr));}@media(max-width:580px){grid-template-columns:1fr;}`;
-export const Card = styled.article`padding:16px;border:1px solid #ded6cc;border-radius:13px;background:#fff;`;
+export const Card = styled.article`padding:16px;border:1px solid var(--color-border);border-radius:13px;background:var(--color-surface);`;
 export const CardHeader = styled.div`display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;`;
 export const Theme = styled.div`display:flex;align-items:flex-start;gap:9px;min-width:0;i{flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;}span{display:grid;min-width:0;}strong{overflow:hidden;font-size:12px;text-overflow:ellipsis;white-space:nowrap;}small{font-size:8px;}`;
-export const Status = styled.span<{ $confirmed: boolean }>`flex:none;padding:5px 9px;border-radius:999px;color:${({$confirmed})=>$confirmed ? "#fff" : "#1d1c1a"};background:${({$confirmed})=>$confirmed ? "#1d1c1a" : "#f5f5f4"};font-size:8px;font-weight:700;`;
+export const Status = styled.span<{ $confirmed: boolean }>`flex:none;padding:5px 9px;border-radius:999px;color:${({$confirmed})=>$confirmed ? "var(--color-surface)" : "var(--color-text)"};background:${({$confirmed})=>$confirmed ? "var(--color-text)" : "#f5f5f4"};font-size:8px;font-weight:700;`;
 export const TripInfo = styled.p`margin:0 0 13px;font-size:9px;line-height:1.5;`;
 export const ApplicantHeader = styled.div`display:flex;justify-content:space-between;gap:10px;margin-bottom:5px;font-size:9px;strong{font-size:10px;}`;
-export const Progress = styled.div`height:6px;overflow:hidden;border-radius:999px;background:#e9e4da;i{display:block;height:100%;background:#1d1c1a;}`;
+export const Progress = styled.div`height:6px;overflow:hidden;border-radius:999px;background:#e9e4da;i{display:block;height:100%;background:var(--color-text);}`;
 export const CustomerList = styled.ul`display:grid;gap:6px;min-height:48px;margin:13px 0 10px;padding:12px 0 0;border-top:1px solid #eee9e2;list-style:none;li{display:flex;justify-content:space-between;gap:10px;color:#58524c;font-size:8px;}`;
-export const Confirmation = styled.div<{ $confirmed: boolean }>`display:grid;place-items:center;min-height:43px;border-radius:7px;color:#1d1c1a;background:${({$confirmed})=>$confirmed ? "#efeeeb" : "#eee7d9"};font-size:10px;font-weight:700;`;
+export const Confirmation = styled.div<{ $confirmed: boolean }>`display:grid;place-items:center;min-height:43px;border-radius:7px;color:var(--color-text);background:${({$confirmed})=>$confirmed ? "#efeeeb" : "#eee7d9"};font-size:10px;font-weight:700;`;
 export const Help = styled.p`margin:10px 0 0;color:#68625c;font-size:8px;line-height:1.5;`;
-export const Empty = styled.p`display:grid;place-items:center;min-height:180px;margin:0;border:1px dashed #ded6cc;border-radius:13px;color:#756e66;font-size:11px;`;
+export const Empty = styled.p`display:grid;place-items:center;min-height:180px;margin:0;border:1px dashed var(--color-border);border-radius:13px;color:#756e66;font-size:11px;`;

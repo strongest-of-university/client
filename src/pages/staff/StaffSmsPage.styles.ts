@@ -2,8 +2,8 @@ import styled from "styled-components";
 
 export const Page = styled.div`
   min-height: 100vh;
-  color: #1d1c1a;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
 `;
 
 export const Main = styled.main`
@@ -36,9 +36,9 @@ export const Description = styled.p`
 
 export const MessageList = styled.section`
   overflow: hidden;
-  border: 1px solid #ded6cc;
+  border: 1px solid var(--color-border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--color-surface);
 `;
 
 export const MessageRow = styled.article`

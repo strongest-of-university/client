@@ -14,8 +14,8 @@ export const Sheet = styled.div`
   max-height: min(80vh, 720px);
   overflow-y: auto;
   border-radius: 20px 20px 0 0;
-  background: #fff;
-  color: #1d1c1a;
+  background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.24);
 `;
 
@@ -48,12 +48,12 @@ export const CloseButton = styled.button`
   border: 0;
   border-radius: 50%;
   background: #f2eee7;
-  color: #1d1c1a;
+  color: var(--color-text);
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
 
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 3px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 `;
 
 export const Content = styled.div`

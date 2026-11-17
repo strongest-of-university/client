@@ -29,8 +29,8 @@ export const Dialog = styled.div<{
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   border-radius: 16px;
-  background: ${({ $tone }) => ($tone === "warm" ? "#fffdf8" : "#fff")};
-  color: #1d1c1a;
+  background: ${({ $tone }) => ($tone === "warm" ? "var(--color-background)" : "var(--color-surface)")};
+  color: var(--color-text);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   transform: ${({ $open }) => ($open ? "translateY(0) scale(1)" : "translateY(14px) scale(0.985)")};
@@ -65,14 +65,14 @@ export const CloseButton = styled.button<{ $tone: "default" | "warm" }>`
   border: 0;
   border-radius: 50%;
   background: ${({ $tone }) => ($tone === "warm" ? "transparent" : "#f2eee7")};
-  color: #1d1c1a;
+  color: var(--color-text);
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
 
   svg { width: 21px; height: 21px; }
 
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 3px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 `;
 
 export const Content = styled.div`

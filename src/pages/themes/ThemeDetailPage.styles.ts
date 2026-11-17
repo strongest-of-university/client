@@ -2,8 +2,8 @@ import styled from "styled-components";
 
 export const Page = styled.div`
   min-height: 100vh;
-  background: #fff;
-  color: #1d1c1a;
+  background: var(--color-surface);
+  color: var(--color-text);
 
   a:focus-visible,
   button:focus-visible {
@@ -22,7 +22,7 @@ export const Hero = styled.section<{
   display: flex;
   align-items: flex-end;
   background: url(${({ $image }) => $image}) ${({ $position }) => $position} / cover no-repeat;
-  color: #fff;
+  color: var(--color-surface);
 
   &::before {
     content: "";
@@ -86,7 +86,7 @@ export const Overview = styled.div`
 export const SectionTitle = styled.h2<{ $compact?: boolean }>`
   margin: 0 0 ${({ $compact }) => ($compact ? "18px" : "22px")};
   padding-bottom: ${({ $compact }) => ($compact ? "14px" : "18px")};
-  border-bottom: 1px solid #1d1c1a;
+  border-bottom: 1px solid var(--color-text);
   font: 500 ${({ $compact }) => ($compact ? "30px" : "36px")} "Cormorant Garamond", serif;
   line-height: 1.25;
 `;
@@ -172,8 +172,8 @@ export const DepartureTitle = styled.h3`
 export const Badge = styled.span<{ $confirmed: boolean }>`
   padding: 4px 10px;
   border-radius: 20px;
-  background: ${({ $confirmed }) => ($confirmed ? "#1d1c1a" : "#f5f5f5")};
-  color: ${({ $confirmed }) => ($confirmed ? "#fff" : "#1d1c1a")};
+  background: ${({ $confirmed }) => ($confirmed ? "var(--color-text)" : "#f5f5f5")};
+  color: ${({ $confirmed }) => ($confirmed ? "var(--color-surface)" : "var(--color-text)")};
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -203,11 +203,11 @@ export const CapacityBar = styled.progress`
   border: 0;
   border-radius: 10px;
   background: #e8e2d7;
-  color: #1d1c1a;
+  color: var(--color-text);
 
   &::-webkit-progress-bar { background: #e8e2d7; }
-  &::-webkit-progress-value { background: #1d1c1a; }
-  &::-moz-progress-bar { background: #1d1c1a; }
+  &::-webkit-progress-value { background: var(--color-text); }
+  &::-moz-progress-bar { background: var(--color-text); }
 `;
 
 export const ReservationButton = styled.button`
@@ -216,8 +216,8 @@ export const ReservationButton = styled.button`
   padding: 12px 16px;
   border: 0;
   border-radius: 11px;
-  background: #1d1c1a;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-surface);
   font-size: 14px;
   font-weight: 700;
   transition: background-color 0.2s ease;
@@ -227,7 +227,7 @@ export const ReservationButton = styled.button`
 
 export const ReservationNotice = styled.p`
   margin: 14px 0 0;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.7;
 `;
@@ -249,7 +249,7 @@ export const StyleCard = styled.article<{ $unavailable: boolean }>`
   padding: 20px;
   border: 1px solid ${({ $unavailable }) => ($unavailable ? "#ece7df" : "#dacebd")};
   border-radius: 16px;
-  color: ${({ $unavailable }) => ($unavailable ? "#999" : "#1d1c1a")};
+  color: ${({ $unavailable }) => ($unavailable ? "#999" : "var(--color-text)")};
 `;
 
 export const StyleTitle = styled.h3`
@@ -284,7 +284,7 @@ export const OtherTheme = styled.a<{ $color: string }>`
   padding: 16px 20px;
   border-radius: 15px;
   background: ${({ $color }) => $color};
-  color: #fff;
+  color: var(--color-surface);
   text-decoration: none;
   transition: filter 0.2s ease;
 

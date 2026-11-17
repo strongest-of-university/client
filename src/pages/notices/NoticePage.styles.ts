@@ -2,8 +2,8 @@ import styled from "styled-components";
 
 export const Page = styled.div`
   min-height: 100vh;
-  background: #fff;
-  color: #1d1c1a;
+  background: var(--color-surface);
+  color: var(--color-text);
   display: flex;
   flex-direction: column;
 
@@ -29,7 +29,7 @@ export const Eyebrow = styled.p`
 
 export const ArticleHeader = styled.header`
   padding-bottom: 24px;
-  border-bottom: 1px solid #1d1c1a;
+  border-bottom: 1px solid var(--color-text);
 `;
 
 export const Title = styled.h1`
@@ -42,7 +42,7 @@ export const Title = styled.h1`
 
 export const Metadata = styled.p`
   margin: 0;
-  color: #6b665d;
+  color: var(--color-text-muted);
   font-size: 14px;
 `;
 
@@ -59,7 +59,7 @@ export const Body = styled.div`
 `;
 
 export const ArticleNavigation = styled.nav`
-  border-top: 1px solid #1d1c1a;
+  border-top: 1px solid var(--color-text);
   font-size: 15px;
   line-height: 1.7;
 `;

@@ -14,7 +14,7 @@ export const StepNav = styled.ol`
   overflow: hidden;
   border: 1px solid #e2dfda;
   border-radius: 4px;
-  background: #fff;
+  background: var(--color-surface);
   list-style: none;
 
   @media (max-width: 760px) {
@@ -33,13 +33,13 @@ export const Step = styled.li<{ $active: boolean; $complete: boolean }>`
 
   &:last-child { border-right: 0; }
 
-  ${({ $active }) => $active && css`background: #fffdf8;`}
+  ${({ $active }) => $active && css`background: var(--color-background);`}
 
   ${({ $complete }) => $complete && css`
     > span:first-child {
-      border-color: #1d1c1a;
-      color: #fff;
-      background: #1d1c1a;
+      border-color: var(--color-text);
+      color: var(--color-surface);
+      background: var(--color-text);
     }
   `}
 
@@ -79,9 +79,9 @@ export const StepNumber = styled.span`
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  border: 1px solid #1d1c1a;
-  color: #1d1c1a;
-  background: #fff;
+  border: 1px solid var(--color-text);
+  color: var(--color-text);
+  background: var(--color-surface);
   font-size: 12px;
   font-weight: 700;
 `;
@@ -110,7 +110,7 @@ export const Section = styled.section`
   padding: 22px;
   border: 1px solid #e3e0db;
   border-radius: 5px;
-  background: #fff;
+  background: var(--color-surface);
 
   @media (max-width: 520px) { padding: 18px 14px; }
 `;
@@ -142,10 +142,10 @@ export const ThemeCard = styled.button<{ $selected: boolean; $color: string }>`
   align-items: flex-start;
   min-height: 150px;
   padding: 22px 16px;
-  border: 1px solid ${({ $selected }) => $selected ? "#1d1c1a" : "#e5e1db"};
+  border: 1px solid ${({ $selected }) => $selected ? "var(--color-text)" : "#e5e1db"};
   border-radius: 4px;
-  color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
-  background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  color: ${({ $selected }) => $selected ? "var(--color-surface)" : "var(--color-text)"};
+  background: ${({ $selected }) => $selected ? "var(--color-text)" : "var(--color-surface)"};
   box-shadow: 0 3px 10px rgba(35, 29, 23, 0.06);
   text-align: left;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -157,7 +157,7 @@ export const ThemeCard = styled.button<{ $selected: boolean; $color: string }>`
 
   &:focus-visible { outline: 2px solid ${({ $color }) => $color}; outline-offset: 2px; }
 
-  svg { margin-bottom: 14px; color: ${({ $selected, $color }) => $selected ? "#fff" : $color}; font-size: 23px; }
+  svg { margin-bottom: 14px; color: ${({ $selected, $color }) => $selected ? "var(--color-surface)" : $color}; font-size: 23px; }
   strong { margin-bottom: 12px; font-size: 15px; }
   span { color: ${({ $selected }) => $selected ? "#ddd8d1" : "#756e66"}; font-size: 9px; line-height: 1.55; }
 `;
@@ -175,10 +175,10 @@ export const ChoiceCard = styled.button<{ $selected: boolean }>`
   gap: 7px;
   min-height: 76px;
   padding: 15px;
-  border: 1px solid ${({ $selected }) => $selected ? "#1d1c1a" : "#e3dfd8"};
+  border: 1px solid ${({ $selected }) => $selected ? "var(--color-text)" : "#e3dfd8"};
   border-radius: 5px;
-  color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
-  background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  color: ${({ $selected }) => $selected ? "var(--color-surface)" : "var(--color-text)"};
+  background: ${({ $selected }) => $selected ? "var(--color-text)" : "var(--color-surface)"};
   box-shadow: 0 3px 10px rgba(35, 29, 23, 0.04);
   text-align: left;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -189,7 +189,7 @@ export const ChoiceCard = styled.button<{ $selected: boolean }>`
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(35, 29, 23, 0.1);
   }
-  &:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
 `;
 
 export const EmptyState = styled.div`
@@ -218,7 +218,7 @@ export const Counter = styled.div`
     height: 32px;
     border: 1px solid #807a73;
     border-radius: 3px;
-    background: #fff;
+    background: var(--color-surface);
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 `;
@@ -236,10 +236,10 @@ export const GradeCard = styled.button<{ $selected: boolean }>`
   gap: 8px;
   min-height: 72px;
   padding: 15px;
-  border: 1px solid ${({ $selected }) => $selected ? "#1d1c1a" : "#e3dfd8"};
+  border: 1px solid ${({ $selected }) => $selected ? "var(--color-text)" : "#e3dfd8"};
   border-radius: 5px;
-  color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
-  background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  color: ${({ $selected }) => $selected ? "var(--color-surface)" : "var(--color-text)"};
+  background: ${({ $selected }) => $selected ? "var(--color-text)" : "var(--color-surface)"};
   box-shadow: 0 3px 10px rgba(35, 29, 23, 0.04);
   text-align: left;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -253,7 +253,7 @@ export const GradeCard = styled.button<{ $selected: boolean }>`
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(35, 29, 23, 0.1);
   }
-  &:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
 `;
 
 export const HelpText = styled.p`
@@ -304,10 +304,10 @@ export const OptionButton = styled.button<{ $selected: boolean }>`
   min-width: 128px;
   min-height: 64px;
   padding: 11px 16px;
-  border: 1px solid ${({ $selected }) => $selected ? "#1d1c1a" : "#d9d1c7"};
+  border: 1px solid ${({ $selected }) => $selected ? "var(--color-text)" : "#d9d1c7"};
   border-radius: 5px;
-  color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
-  background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  color: ${({ $selected }) => $selected ? "var(--color-surface)" : "var(--color-text)"};
+  background: ${({ $selected }) => $selected ? "var(--color-text)" : "var(--color-surface)"};
   box-shadow: 0 3px 10px rgba(35, 29, 23, 0.04);
   text-align: left;
   transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -324,7 +324,7 @@ export const OptionButton = styled.button<{ $selected: boolean }>`
   }
 
   &:hover:not(:disabled) {
-    border-color: #1d1c1a;
+    border-color: var(--color-text);
     transform: translateY(-2px);
     box-shadow: 0 6px 14px rgba(35, 29, 23, 0.1);
   }
@@ -337,7 +337,7 @@ export const OptionButton = styled.button<{ $selected: boolean }>`
   }
 
   &:disabled span { color: #c1bbb3; }
-  &:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
 
   @media (max-width: 480px) {
     flex: 1 1 130px;
@@ -379,7 +379,7 @@ export const Summary = styled.aside`
   padding: 22px;
   border: 1px solid #e3e0db;
   border-radius: 5px;
-  background: #fff;
+  background: var(--color-surface);
 
   @media (max-width: 820px) {
     position: static;
@@ -425,13 +425,13 @@ export const SubmitButton = styled.button`
   margin-top: 18px;
   border: 0;
   border-radius: 4px;
-  color: #fff;
-  background: #1d1c1a;
+  color: var(--color-surface);
+  background: var(--color-text);
   font-size: 12px;
   font-weight: 700;
 
   &:disabled { color: #898581; background: #dddddd; cursor: not-allowed; }
-  &:focus-visible { outline: 2px solid #1d1c1a; outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--color-text); outline-offset: 2px; }
 `;
 
 export const SummaryHint = styled.p`
@@ -469,7 +469,7 @@ export const LoadingDialog = styled.div`
   min-height: 184px;
   padding: 32px;
   border-radius: 24px;
-  background: #fff;
+  background: var(--color-surface);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
 
   strong {
@@ -482,7 +482,7 @@ export const Spinner = styled.span`
   width: 60px;
   height: 60px;
   border: 4px solid #e5e2dc;
-  border-bottom-color: #1d1c1a;
+  border-bottom-color: var(--color-text);
   border-radius: 50%;
   animation: payment-spin 0.85s linear infinite;
 
@@ -505,7 +505,7 @@ export const CompletionDialog = styled.div`
   width: min(550px, 100%);
   padding: 44px 34px 34px;
   border-radius: 22px;
-  background: #fffdf8;
+  background: var(--color-background);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
 `;
 
@@ -514,7 +514,7 @@ export const CheckCircle = styled.span`
   place-items: center;
   width: 68px;
   height: 68px;
-  border: 2px solid #1d1c1a;
+  border: 2px solid var(--color-text);
   border-radius: 50%;
 
   svg {
@@ -543,15 +543,15 @@ export const HomeButton = styled.button`
   min-height: 58px;
   border: 1px solid #ded1c0;
   border-radius: 12px;
-  color: #1d1c1a;
+  color: var(--color-text);
   background: transparent;
   font-size: 16px;
 `;
 
 export const HistoryButton = styled(HomeButton)`
-  border-color: #1d1c1a;
-  color: #fff;
-  background: #1d1c1a;
+  border-color: var(--color-text);
+  color: var(--color-surface);
+  background: var(--color-text);
   font-weight: 700;
 `;
 
@@ -581,14 +581,14 @@ export const PaymentField = styled.div`
     padding: 0 15px;
     border: 1px solid #ddd1c1;
     border-radius: 12px;
-    color: #1d1c1a;
-    background: #fff;
+    color: var(--color-text);
+    background: var(--color-surface);
     font: 500 17px "Noto Sans KR", sans-serif;
     outline: none;
   }
 
   input::placeholder { color: #8b8986; }
-  input:focus { border-color: #1d1c1a; box-shadow: 0 0 0 2px rgba(29, 28, 26, 0.08); }
+  input:focus { border-color: var(--color-text); box-shadow: 0 0 0 2px rgba(29, 28, 26, 0.08); }
 `;
 
 export const InstallmentSelect = styled.div`
@@ -605,8 +605,8 @@ export const InstallmentTrigger = styled.button`
   padding: 0 15px;
   border: 1px solid #ddd1c1;
   border-radius: 12px;
-  color: #1d1c1a;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
   font: 500 17px "Noto Sans KR", sans-serif;
   text-align: left;
 
@@ -624,7 +624,7 @@ export const InstallmentList = styled.div`
   overflow: hidden;
   border: 1px solid #ddd1c1;
   border-radius: 12px;
-  background: #fff;
+  background: var(--color-surface);
   box-shadow: 0 10px 24px rgba(35, 29, 23, 0.1);
   animation: installment-open 0.2s ease-out;
 
@@ -642,14 +642,14 @@ export const InstallmentOption = styled.button<{ $selected: boolean }>`
   padding: 0 15px;
   border: 0;
   border-bottom: 1px solid #eee9e2;
-  color: ${({ $selected }) => $selected ? "#fff" : "#1d1c1a"};
-  background: ${({ $selected }) => $selected ? "#1d1c1a" : "#fff"};
+  color: ${({ $selected }) => $selected ? "var(--color-surface)" : "var(--color-text)"};
+  background: ${({ $selected }) => $selected ? "var(--color-text)" : "var(--color-surface)"};
   font: 500 14px "Noto Sans KR", sans-serif;
   text-align: left;
 
   &:last-child { border-bottom: 0; }
-  &:hover { color: #fff; background: #1d1c1a; }
-  &:focus-visible { position: relative; outline: 2px solid #88745a; outline-offset: -3px; }
+  &:hover { color: var(--color-surface); background: var(--color-text); }
+  &:focus-visible { position: relative; outline: 2px solid var(--color-accent); outline-offset: -3px; }
 `;
 
 export const PaymentFieldRow = styled.div`
@@ -694,7 +694,7 @@ export const CardBrands = styled.span`
     height: 22px;
     padding: 0 5px;
     border-radius: 4px;
-    color: #fff;
+    color: var(--color-surface);
     background: #242476;
     font: 800 11px Arial, sans-serif;
   }
@@ -712,7 +712,7 @@ export const PaymentTotal = styled.div`
   padding: 20px 24px;
   border-top: 1px solid #e4dfd7;
   border-bottom: 1px solid #e4dfd7;
-  background: #fffdf8;
+  background: var(--color-background);
 
   > strong { font-size: 16px; }
 
@@ -738,8 +738,8 @@ export const PreviousButton = styled.button`
   height: 55px;
   border: 1px solid #ddd1c1;
   border-radius: 12px;
-  color: #1d1c1a;
-  background: #fff;
+  color: var(--color-text);
+  background: var(--color-surface);
   font-size: 16px;
 `;
 
@@ -748,8 +748,8 @@ export const ConfirmPaymentButton = styled.button`
   height: 55px;
   border: 0;
   border-radius: 12px;
-  color: #fff;
-  background: #1d1c1a;
+  color: var(--color-surface);
+  background: var(--color-text);
   font-size: 15px;
   font-weight: 700;
 
@@ -776,7 +776,7 @@ export const AgreementDetailsButton = styled.button`
   font: inherit;
   text-align: left;
   cursor: pointer;
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 2px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 `;
 
 export const AgreementContent = styled.div`
@@ -785,7 +785,7 @@ export const AgreementContent = styled.div`
   line-height: 1.7;
   > p { margin: 0 0 20px; color: #756e66; font-size: 13px; }
   section + section { margin-top: 20px; }
-  h3 { margin: 0 0 6px; color: #1d1c1a; font-size: 15px; }
+  h3 { margin: 0 0 6px; color: var(--color-text); font-size: 15px; }
   section p { margin: 0; }
 `;
 
@@ -796,9 +796,9 @@ export const AgreementCloseButton = styled.button`
   margin: 28px 0 0 auto;
   border: 0;
   border-radius: 4px;
-  background: #1d1c1a;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-surface);
   font-weight: 700;
   cursor: pointer;
-  &:focus-visible { outline: 2px solid #88745a; outline-offset: 3px; }
+  &:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 `;
