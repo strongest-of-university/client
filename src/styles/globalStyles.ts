@@ -20,8 +20,6 @@ export const tokens = {
 } as const;
 
 export const GlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@600;700&display=swap');
-
   :root {
     --font-sans: ${tokens.fonts.sans};
     --font-serif: ${tokens.fonts.serif};

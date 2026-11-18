@@ -25,13 +25,13 @@ export const Eyebrow = styled.p`
 
 export const Title = styled.h1`
   margin: 0 0 9px;
-  font: 700 30px "Noto Serif KR", serif;
+  font: 700 32px "Noto Serif KR", serif;
 `;
 
 export const Description = styled.p`
   margin: 0 0 34px;
   color: #504a44;
-  font-size: 12px;
+  font-size: 14px;
 `;
 
 export const MessageList = styled.section`
@@ -65,7 +65,7 @@ export const Meta = styled.div`
   gap: 10px;
 
   time {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
   }
 `;
@@ -74,7 +74,7 @@ export const Type = styled.span`
   padding: 6px 10px;
   border-radius: 999px;
   background: #f3f3f2;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 `;
 
@@ -83,11 +83,11 @@ export const MessageContent = styled.div`
   align-content: start;
   gap: 7px;
 
-  strong { font-size: 12px; }
+  strong { font-size: 14px; }
 
   p {
     margin: 0;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.6;
     word-break: keep-all;
   }
