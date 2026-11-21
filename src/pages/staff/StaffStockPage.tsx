@@ -1,25 +1,22 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { changeInventory, getInventory, type InventoryApiItem } from "../../services/inventoryService";
+import {
+  changeInventory,
+  getInventory,
+  getInventoryHistory,
+  type InventoryApiItem,
+  type InventoryHistoryPageResponse,
+} from "../../services/inventoryService";
 import StaffHeader from "./StaffHeader";
 import { loadInventory, saveInventory, type Inventory, type InventoryId } from "./staffInventory";
 import * as S from "./StaffStockPage.styles";
 
-type StockHistory = {
-  id: number;
-  changedAt: string;
-  itemName: string;
-  unit: string;
-  beforeQuantity: number;
-  afterQuantity: number;
-  changeType: "입고" | "출고";
-  reason: string;
-};
-
 export default function StaffStockPage() {
   const [activeView, setActiveView] = useState<"stock" | "history">("stock");
   const [inventory, setInventory] = useState<Inventory>(loadInventory);
-  const [history, setHistory] = useState<StockHistory[]>(SAMPLE_HISTORY);
+  const [historyPage, setHistoryPage] = useState<InventoryHistoryPageResponse | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [pendingChanges, setPendingChanges] = useState<Partial<Record<InventoryId, number>>>({});
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
@@ -46,6 +43,18 @@ export default function StaffStockPage() {
     return () => { active = false; };
   }, []);
 
+  const loadHistory = useCallback(async (page: number) => {
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      setHistoryPage(await getInventoryHistory(page));
+    } catch (error) {
+      setHistoryError(getErrorMessage(error));
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
   function stageStockChange(itemId: InventoryId, change: number) {
     setMessage("");
     setPendingChanges((current) => {
@@ -67,32 +76,20 @@ export default function StaffStockPage() {
     try {
       await Promise.all(changes.map(([itemId, change]) => {
         const apiItem = INVENTORY_ID_TO_API[itemId];
-        return apiItem ? changeInventory(apiItem, change, reason.trim()) : Promise.resolve();
+        const quantityAfter = Math.max(0, inventory[itemId].amount + change);
+        return apiItem ? changeInventory(apiItem, change, quantityAfter, reason.trim()) : Promise.resolve();
       }));
 
       const next = { ...inventory };
       changes.forEach(([itemId, change]) => {
         next[itemId] = { ...next[itemId], amount: Math.max(0, next[itemId].amount + change) };
       });
-      const submittedAt = formatHistoryDate(new Date());
-      setHistory((current) => [
-        ...changes.map(([itemId, change], index) => ({
-          id: Date.now() + index,
-          changedAt: submittedAt,
-          itemName: inventory[itemId].name,
-          unit: inventory[itemId].unit,
-          beforeQuantity: inventory[itemId].amount,
-          afterQuantity: Math.max(0, inventory[itemId].amount + change),
-          changeType: (change > 0 ? "입고" : "출고") as "입고" | "출고",
-          reason: reason.trim(),
-        })),
-        ...current,
-      ]);
       setInventory(next);
       saveInventory(next);
       setPendingChanges({});
       setReason("");
       setMessage(`${changedItemCount}개 품목의 재고 변경이 제출되었습니다.`);
+      await loadHistory(0);
     } catch (error) {
       setMessage(getErrorMessage(error));
       getInventory().then((items) => {
@@ -120,7 +117,10 @@ export default function StaffStockPage() {
         <S.Description>기념품과 추가 옵션 재고를 관리해요. 판매 중인 상품의 신청 인원으로 필요 수량을 계산해요.</S.Description>
         <S.ViewTabs role="tablist" aria-label="재고 관리 메뉴">
           <S.ViewTab type="button" role="tab" aria-selected={activeView === "stock"} $selected={activeView === "stock"} onClick={() => setActiveView("stock")}>재고 현황</S.ViewTab>
-          <S.ViewTab type="button" role="tab" aria-selected={activeView === "history"} $selected={activeView === "history"} onClick={() => setActiveView("history")}>변경 이력</S.ViewTab>
+          <S.ViewTab type="button" role="tab" aria-selected={activeView === "history"} $selected={activeView === "history"} onClick={() => {
+            setActiveView("history");
+            if (historyPage === null && !historyLoading) void loadHistory(0);
+          }}>변경 이력</S.ViewTab>
         </S.ViewTabs>
         {activeView === "stock" ? <>
         <S.Grid>
@@ -161,24 +161,35 @@ export default function StaffStockPage() {
           <S.HistorySection>
             <S.HistoryHeading>
               <span><strong>재고 변경 이력</strong><small>품목별 입출고 수량과 변경 사유를 확인할 수 있어요.</small></span>
-              <b>총 {history.length}건</b>
             </S.HistoryHeading>
             <S.HistoryTableWrap>
-              <S.HistoryTable>
+              {historyLoading ? <S.HistoryState>변경 이력을 불러오는 중입니다.</S.HistoryState> : historyError ? (
+                <S.HistoryState>{historyError}<button type="button" onClick={() => void loadHistory(historyPage?.currentPage ?? 0)}>다시 시도</button></S.HistoryState>
+              ) : !historyPage?.histories.length ? <S.HistoryState>아직 재고 변경 이력이 없습니다.</S.HistoryState> : <S.HistoryTable>
                 <thead><tr><th>변경 일시</th><th>품목</th><th>구분</th><th>수량 변경</th><th>변경 사유</th></tr></thead>
                 <tbody>
-                  {history.map((entry) => (
-                    <tr key={entry.id}>
-                      <td data-label="변경 일시">{entry.changedAt}</td>
+                  {historyPage.histories.map((entry) => {
+                    const beforeQuantity = entry.quantityAfter - entry.changeQuantity;
+                    const changeLabel = CHANGE_TYPE_LABEL[entry.changeType];
+                    const unit = INVENTORY_UNIT[entry.item];
+                    return <tr key={entry.historyId}>
+                      <td data-label="변경 일시">{formatHistoryDate(entry.createdAt)}</td>
                       <td data-label="품목"><strong>{entry.itemName}</strong></td>
-                      <td data-label="구분"><S.ChangeBadge $inbound={entry.changeType === "입고"}>{entry.changeType}</S.ChangeBadge></td>
-                      <td data-label="수량 변경"><S.QuantityChange><span>{entry.beforeQuantity}{entry.unit}</span><i>→</i><strong>{entry.afterQuantity}{entry.unit}</strong></S.QuantityChange></td>
+                      <td data-label="구분"><S.ChangeBadge $inbound={entry.changeType === "INBOUND"}>{changeLabel}</S.ChangeBadge></td>
+                      <td data-label="수량 변경"><S.QuantityChange><span>{beforeQuantity}{unit}</span><i>→</i><strong>{entry.quantityAfter}{unit}</strong></S.QuantityChange></td>
                       <td data-label="변경 사유">{entry.reason}</td>
-                    </tr>
-                  ))}
+                    </tr>;
+                  })}
                 </tbody>
-              </S.HistoryTable>
+              </S.HistoryTable>}
             </S.HistoryTableWrap>
+            {historyPage && historyPage.totalPages > 1 && (
+              <S.Pagination aria-label="재고 변경 이력 페이지">
+                <button type="button" disabled={!historyPage.hasPrevious || historyLoading} onClick={() => void loadHistory(historyPage.currentPage - 1)}>이전</button>
+                <span>{historyPage.currentPage + 1} / {historyPage.totalPages}</span>
+                <button type="button" disabled={!historyPage.hasNext || historyLoading} onClick={() => void loadHistory(historyPage.currentPage + 1)}>다음</button>
+              </S.Pagination>
+            )}
           </S.HistorySection>
         )}
       </S.Main>
@@ -200,17 +211,20 @@ const API_TO_INVENTORY_ID: Record<InventoryApiItem, InventoryId> = {
   SCARF: "scarf",
 };
 
-function formatHistoryDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-  return `${year}.${month}.${day} ${hour}:${minute}`;
+function formatHistoryDate(value: string) {
+  const matched = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  return matched ? `${matched[1]}.${matched[2]}.${matched[3]} ${matched[4]}:${matched[5]}` : value;
 }
 
-const SAMPLE_HISTORY: StockHistory[] = [
-  { id: 1, changedAt: "2026.11.09 10:24", itemName: "커플 기념티", unit: "벌", beforeQuantity: 14, afterQuantity: 24, changeType: "입고", reason: "11월 신규 기념품 입고" },
-  { id: 2, changedAt: "2026.11.08 16:40", itemName: "건강 인삼", unit: "박스", beforeQuantity: 8, afterQuantity: 6, changeType: "출고", reason: "효도 힐링 투어 출발 상품 준비" },
-  { id: 3, changedAt: "2026.11.07 09:15", itemName: "아웃도어 스카프", unit: "장", beforeQuantity: 25, afterQuantity: 35, changeType: "입고", reason: "부족 재고 추가 입고" },
-];
+const INVENTORY_UNIT: Record<InventoryApiItem, string> = {
+  COUPLE_TSHIRT: "벌",
+  GINSENG: "박스",
+  GOLF_BALL: "개",
+  SCARF: "장",
+};
+
+const CHANGE_TYPE_LABEL = {
+  INBOUND: "입고",
+  OUTBOUND: "출고",
+  ADJUSTMENT: "정정",
+} as const;
