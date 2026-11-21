@@ -194,9 +194,11 @@ export default function HomePage() {
         <S.InfoColumn id="reservation">
           <S.SectionHeading>
             <S.SectionTitle>Reservation</S.SectionTitle>
-            <S.MoreButton href="/mypage">
-              더보기 +
-            </S.MoreButton>
+            {isLoggedIn && (
+              <S.MoreButton href="/mypage">
+                더보기 +
+              </S.MoreButton>
+            )}
           </S.SectionHeading>
           {isLoggedIn ? (
             <S.ReservationList>
@@ -278,7 +280,7 @@ export default function HomePage() {
           ))}
         </S.HistoryList>
         {historyItems.length === 0 && <S.HistorySubtitle>완료된 이전 여행이 없습니다.</S.HistorySubtitle>}
-        <S.MoreTripsButton type="button" onClick={() => setHistoryOpen(false)}>
+        <S.MoreTripsButton type="button" onClick={() => window.location.assign("/mypage")}>
           지난 여행 더 보러 가기 <span aria-hidden="true">→</span>
         </S.MoreTripsButton>
       </Modal>

@@ -1,7 +1,7 @@
 import Header from "../../components/Header";
 import { useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { getTravelProduct, getTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProductStatus } from "../../services/travelProductService";
+import { getTravelProduct, getTravelProducts, type ThemeCode, type TravelProductStatus } from "../../services/travelProductService";
 import { useAuth } from "../../contexts/auth/authContext";
 import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
 import * as S from "./ThemeDetailPage.styles";
@@ -117,7 +117,7 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
                       <strong>{departure.price === "가격 정보 없음" ? departure.price : `1인 ${departure.price}원부터`}</strong>
                     </S.DetailRow>
                     <S.CapacityRow>
-                      <span>신청 인원 (최소 {minimumApplicantsForTheme(theme.id.toUpperCase() as ThemeCode)}명)</span>
+                      <span>신청 인원</span>
                       <strong>{departure.applicants} / {departure.capacity}명</strong>
                     </S.CapacityRow>
                     <S.CapacityBar
@@ -130,7 +130,7 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
                       aria-label={`${departure.dates} 일정으로 예약`}
                       onClick={() => reserve(departure.id)}
                     >
-                      이 일정으로 예약
+                      예약
                     </S.ReservationButton>
                     {selectedDeparture === departure.id && (
                       <S.ReservationNotice role="status">

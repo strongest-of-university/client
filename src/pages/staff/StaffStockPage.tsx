@@ -152,7 +152,7 @@ export default function StaffStockPage() {
           })}
         </S.Grid>
         <S.SubmissionPanel onSubmit={(event) => { event.preventDefault(); submitStockChanges(); }}>
-          <S.SubmissionHeader><span><strong>재고 변경 사유</strong><small>수량 변경 내용을 확인한 뒤 사유를 입력해 제출해 주세요.</small></span><b>{changedItemCount}개 품목 변경</b></S.SubmissionHeader>
+          <S.SubmissionHeader><span><strong>재고 변경 사유</strong><small>수량 변경 내용을 확인한 뒤 사유를 입력해 제출해 주세요.</small></span></S.SubmissionHeader>
           <S.ReasonField>
             <textarea value={reason} maxLength={255} placeholder="예: 기념품 신규 입고 및 파손 재고 조정" onChange={(event) => setReason(event.target.value)} required />
             <small>{reason.length}/255</small>
@@ -224,8 +224,18 @@ function mergeInventory(current: Inventory, items: Awaited<ReturnType<typeof get
 }
 
 function formatHistoryDate(value: string) {
-  const matched = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-  return matched ? `${matched[1]}.${matched[2]}.${matched[3]} ${matched[4]}:${matched[5]}` : value;
+  const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  const date = new Date(hasTimeZone ? value : `${value}Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Seoul",
+  }).format(date);
 }
 
 const INVENTORY_UNIT: Record<InventoryApiItem, string> = {

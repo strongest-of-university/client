@@ -3,12 +3,15 @@ import { getErrorMessage } from "../../api/client";
 import { getTravelProductBookings, type TravelProductBooking } from "../../services/bookingService";
 import { getStaffTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProduct, type TravelProductStatus } from "../../services/travelProductService";
 import StaffHeader from "./StaffHeader";
+import StaffProductStatus from "./StaffProductStatusBadge";
+import { STAFF_PRODUCT_STATUS_COLOR } from "./StaffProductStatusColors";
 import * as S from "./StaffReservationPage.styles";
 
 type Filter = "all" | TravelProductStatus;
-type Applicant = { name: string; people: number; phone: string };
+type Applicant = { bookingId: number; name: string; people: number; phone: string };
 type ReservationProduct = {
-  id: string;
+  travelProductId: number;
+  productCode: string;
   theme: string;
   color: string;
   dates: string;
@@ -18,6 +21,7 @@ type ReservationProduct = {
   minimumApplicants: number;
   status: TravelProductStatus;
   customers: Applicant[];
+  customerLoadFailed: boolean;
 };
 
 const THEME_INFO: Record<ThemeCode, { title: string; color: string; code: string }> = {
@@ -84,7 +88,8 @@ export default function StaffReservationPage() {
         <S.Filters aria-label="예약 상태 필터">
           {filters.map((item) => {
             const count = item.id === "all" ? products.length : products.filter((product) => product.status === item.id).length;
-            return <S.FilterButton key={item.id} type="button" $selected={filter === item.id} onClick={() => setFilter(item.id)}>{item.label} {count}</S.FilterButton>;
+            const statusColor = item.id === "all" ? undefined : (STAFF_PRODUCT_STATUS_COLOR[item.id] ?? "#68625c");
+            return <S.FilterButton key={item.id} type="button" $selected={filter === item.id} $statusColor={statusColor} onClick={() => setFilter(item.id)}>{statusColor && <i aria-hidden="true" />}{item.label} {count}</S.FilterButton>;
           })}
         </S.Filters>
 
@@ -94,20 +99,21 @@ export default function StaffReservationPage() {
             const progress = Math.min(100, (product.applicants / product.capacity) * 100);
             const confirmed = product.status === "CONFIRMED";
             return (
-              <S.Card key={product.id}>
+              <S.Card key={product.travelProductId}>
                 <S.CardHeader>
-                  <S.Theme><i style={{ background: product.color }} /><span><strong>{product.theme}</strong><small>{product.id}</small></span></S.Theme>
-                  <S.Status $confirmed={confirmed}>{STATUS_LABEL[product.status]}</S.Status>
+                  <S.Theme><i style={{ background: product.color }} /><span><strong>{product.theme}</strong><small>{product.productCode}</small></span></S.Theme>
+                  <StaffProductStatus status={product.status} />
                 </S.CardHeader>
                 <S.TripInfo>{product.dates} · {product.duration}</S.TripInfo>
-                <S.ApplicantHeader><span>신청 인원 (최소 {product.minimumApplicants}명)</span><strong>{product.applicants} / {product.capacity}명</strong></S.ApplicantHeader>
+                <S.ApplicantHeader><span>신청 인원</span><strong>{product.applicants} / {product.capacity}명</strong></S.ApplicantHeader>
                 <S.Progress aria-label={`최대 ${product.capacity}명 중 ${product.applicants}명 신청`}><i style={{ width: `${progress}%` }} /></S.Progress>
                 <S.CustomerList>
-                  {product.customers.map((customer) => <li key={`${product.id}-${customer.name}`}><span>{customer.name} · {customer.people}명</span><span>{customer.phone}</span></li>)}
-                  {product.customers.length === 0 && <li><span>아직 신청자가 없어요.</span></li>}
+                  {product.customers.map((customer) => <li key={customer.bookingId}><span>{customer.name} · {customer.people}명</span><span>{customer.phone}</span></li>)}
+                  {product.customerLoadFailed && <li><span>예약자 정보를 불러오지 못했어요.</span></li>}
+                  {!product.customerLoadFailed && product.customers.length === 0 && <li><span>아직 신청자가 없어요.</span></li>}
                 </S.CustomerList>
                 <S.Confirmation $confirmed={confirmed}>{statusSummary(product.status, remaining)}</S.Confirmation>
-                <S.Help>{statusHelp(product.status, product.minimumApplicants)}</S.Help>
+                {product.status !== "RECRUITING" && <S.Help>{statusHelp(product.status)}</S.Help>}
               </S.Card>
             );
           })}
@@ -122,8 +128,12 @@ export default function StaffReservationPage() {
 async function loadReservationProducts() {
   const products = await getStaffTravelProducts();
   const reservationProducts = await Promise.all(products.map(async (product) => {
-    const page = await getTravelProductBookings(product.travelProductId);
-    return toReservationProduct(product, product.theme, page.bookings ?? []);
+    try {
+      const { bookings, failed } = await loadAllProductBookings(product.travelProductId);
+      return toReservationProduct(product, product.theme, bookings, failed);
+    } catch {
+      return toReservationProduct(product, product.theme, [], true);
+    }
   }));
   return reservationProducts.sort((a, b) =>
     STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]
@@ -131,14 +141,31 @@ async function loadReservationProducts() {
   );
 }
 
-function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings: TravelProductBooking[]): ReservationProduct {
+async function loadAllProductBookings(travelProductId: number) {
+  const firstPage = await getTravelProductBookings(travelProductId);
+  const bookings = [...(firstPage.bookings ?? [])];
+  if (firstPage.totalPages <= 1) return { bookings, failed: false };
+
+  const remainingPages = await Promise.allSettled(
+    Array.from({ length: firstPage.totalPages - 1 }, (_, index) =>
+      getTravelProductBookings(travelProductId, index + 1),
+    ),
+  );
+  remainingPages.forEach((result) => {
+    if (result.status === "fulfilled") bookings.push(...(result.value.bookings ?? []));
+  });
+  return { bookings, failed: remainingPages.some((result) => result.status === "rejected") };
+}
+
+function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings: TravelProductBooking[], customerLoadFailed: boolean): ReservationProduct {
   const info = THEME_INFO[theme];
   const start = product.departureDate.slice(0, 10);
   const end = product.returnDate.slice(0, 10);
   const nights = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86_400_000));
   const activeBookings = bookings.filter((booking) => booking.bookingStatus !== "CANCELLED");
   return {
-    id: `P-${start.slice(2).replaceAll("-", "")}-${info.code}`,
+    travelProductId: product.travelProductId,
+    productCode: `P-${start.slice(2).replaceAll("-", "")}-${info.code} · 상품 #${product.travelProductId}`,
     theme: info.title,
     color: info.color,
     dates: `${start.replaceAll("-", ".")} – ${end.slice(5).replaceAll("-", ".")}`,
@@ -147,18 +174,19 @@ function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings
     capacity: product.capacity,
     minimumApplicants: minimumApplicantsForTheme(theme),
     status: product.status,
-    customers: activeBookings.map((booking) => ({ name: booking.userName, people: booking.numberOfPeople, phone: maskPhone(booking.phoneNumber) })),
+    customers: activeBookings.map((booking) => ({ bookingId: booking.bookingId, name: booking.userName, people: booking.numberOfPeople, phone: maskPhone(booking.phoneNumber) })),
+    customerLoadFailed,
   };
 }
 
 function statusSummary(status: TravelProductStatus, remaining: number) {
-  if (status === "RECRUITING") return `${remaining}명 더 필요`;
+  if (status === "RECRUITING") return `확정 시 ${remaining}명 더 필요`;
   return STATUS_LABEL[status];
 }
 
-function statusHelp(status: TravelProductStatus, minimumApplicants: number) {
+function statusHelp(status: TravelProductStatus) {
   const messages: Record<TravelProductStatus, string> = {
-    RECRUITING: `${minimumApplicants}명 이상 신청하면 출발이 확정돼요.`,
+    RECRUITING: "",
     CONFIRMED: "출발이 확정된 상품이에요. 신청자에게 확정 문자가 발송됐어요.",
     CLOSED: "예약 접수가 마감된 상품이에요.",
     IN_PROGRESS: "현재 여행이 진행 중인 상품이에요.",

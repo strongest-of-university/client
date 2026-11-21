@@ -125,6 +125,7 @@ const agreementDetails = [
 ] as const;
 
 const currency = new Intl.NumberFormat("ko-KR");
+const FIXED_DRINK_PRICES = { champagne: 70_000, coffee: 15_000 } as const;
 const hotelChoices = [
   { value: "3성급 호텔" },
   { value: "4성급 호텔" },
@@ -164,7 +165,7 @@ export default function BookingPage() {
   const { consumeBookingDraft } = useBookingDraft();
   const [themeId, setThemeId] = useState("");
   const [scheduleId, setScheduleId] = useState("");
-  const [people, setPeople] = useState(2);
+  const [people, setPeople] = useState(1);
   const [gradeId, setGradeId] = useState("");
   const [hotelOption, setHotelOption] = useState("");
   const [transportOption, setTransportOption] = useState("");
@@ -173,6 +174,7 @@ export default function BookingPage() {
   const [agreements, setAgreements] = useState([false, false, false]);
   const [openAgreement, setOpenAgreement] = useState<number | null>(null);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [previewMessage, setPreviewMessage] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -184,9 +186,9 @@ export default function BookingPage() {
   const [installment, setInstallment] = useState("일시불");
   const [installmentOpen, setInstallmentOpen] = useState(false);
   const [productsByTheme, setProductsByTheme] = useState<Partial<Record<ThemeCode, TravelProduct[]>>>({});
+  const [failedThemeCodes, setFailedThemeCodes] = useState<Set<ThemeCode>>(() => new Set());
   const [productsLoading, setProductsLoading] = useState(true);
   const [previewState, setPreviewState] = useState<{ key: string; data: BookingPreview } | null>(null);
-  const [drinkPriceState, setDrinkPriceState] = useState<{ key: string; champagne: number; coffee: number } | null>(null);
 
   const availableThemes = useMemo(() => themes.map((item) => {
     const products = productsByTheme[THEME_CODES[item.id]];
@@ -216,13 +218,6 @@ export default function BookingPage() {
   const selectedTransport = transportOption || theme?.transport;
   const selectedMeal = mealOption || grade?.meal;
   const requiresGrandOrHigher = theme?.id === "honeymoon" || theme?.id === "healing";
-  const defaultDrinkOptions = grade?.drink ? [grade.drink] : [];
-  const changedDrinkOptions = new Set([...defaultDrinkOptions, ...drinkOptions]);
-  const changedOptions = [
-    hotelOption && hotelOption !== grade?.hotel,
-    transportOption && transportOption !== theme?.transport,
-    mealOption && mealOption !== grade?.meal,
-  ].filter(Boolean).length + [...changedDrinkOptions].filter((option) => defaultDrinkOptions.includes(option) !== drinkOptions.includes(option)).length;
   const formattedCardNumber = cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ");
   const paymentReady = cardNumber.length === 16
     && /^\d{2} \/ \d{2}$/.test(expiry)
@@ -242,7 +237,6 @@ export default function BookingPage() {
     };
   })();
   const selectionKey = bookingSelection ? JSON.stringify(bookingSelection) : "";
-  const drinkPriceKey = bookingSelection ? JSON.stringify({ ...bookingSelection, numberOfPeople: 1, selectedDrink: 0 }) : "";
   const bookingPreview = previewState?.key === selectionKey ? previewState.data : null;
   const displayedOriginalPrice = bookingPreview?.originalPrice;
   const discount = bookingPreview?.discountAmount;
@@ -250,16 +244,25 @@ export default function BookingPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all((Object.values(THEME_CODES) as ThemeCode[]).map(async (code) => {
+    const themeCodes = Object.values(THEME_CODES) as ThemeCode[];
+    Promise.allSettled(themeCodes.map(async (code) => {
       const products = await getTravelProducts(code);
       const details = await Promise.all(products.map((product) => getTravelProduct(product.travelProductId).catch(() => product)));
       return [code, details.map((detail, index) => ({ ...products[index], ...detail, theme: code }))] as const;
     }))
-      .then((entries) => {
+      .then((results) => {
         if (!active) return;
-        const next = Object.fromEntries(entries) as Record<ThemeCode, TravelProduct[]>;
+        const entries = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+        const failed = new Set(results.flatMap((result, index) => result.status === "rejected" ? [themeCodes[index]] : []));
+        const next = Object.fromEntries(entries) as Partial<Record<ThemeCode, TravelProduct[]>>;
         setProductsByTheme(next);
+        setFailedThemeCodes(failed);
         setProductsLoading(false);
+        if (entries.length === 0) {
+          const firstError = results.find((result) => result.status === "rejected");
+          setSubmitMessage(`상품 일정을 불러오지 못했습니다.${firstError?.status === "rejected" ? ` ${getErrorMessage(firstError.reason)}` : ""}`);
+          return;
+        }
         const savedBookingDraft = consumeBookingDraft();
         const savedId = savedBookingDraft.travelProductId;
         if (savedId) {
@@ -270,7 +273,7 @@ export default function BookingPage() {
             setScheduleId(String(savedId));
             const selectedProduct = matched[1].find((product) => product.travelProductId === savedId);
             const capacity = Math.max(0, selectedProduct?.remainingCapacity ?? 0);
-            if (capacity > 0) setPeople((current) => clampPeople(current, capacity, selectedThemeId === "honeymoon"));
+            if (capacity > 0) setPeople(clampPeople(selectedThemeId === "honeymoon" ? 2 : 1, capacity, selectedThemeId === "honeymoon"));
             const savedDraft = savedBookingDraft.voiceDraft;
             if (savedDraft) {
               try {
@@ -310,10 +313,13 @@ export default function BookingPage() {
     const timer = window.setTimeout(() => {
       previewBooking(selection)
         .then((preview) => {
-          if (active) setPreviewState({ key: selectionKey, data: preview });
+          if (active) {
+            setPreviewState({ key: selectionKey, data: preview });
+            setPreviewMessage("");
+          }
         })
         .catch((error) => {
-          if (active) setSubmitMessage(getErrorMessage(error));
+          if (active) setPreviewMessage(getErrorMessage(error));
         });
     }, 250);
     return () => {
@@ -321,23 +327,6 @@ export default function BookingPage() {
       window.clearTimeout(timer);
     };
   }, [selectionKey]);
-
-  useEffect(() => {
-    if (!drinkPriceKey) return;
-    let active = true;
-    const baseSelection = JSON.parse(drinkPriceKey) as BookingSelection;
-    Promise.all([
-      previewBooking({ ...baseSelection, selectedDrink: 1 }),
-      previewBooking({ ...baseSelection, selectedDrink: 2 }),
-    ])
-      .then(([champagne, coffee]) => {
-        if (active) setDrinkPriceState({ key: drinkPriceKey, champagne: champagne.drinkPrice, coffee: coffee.drinkPrice });
-      })
-      .catch(() => {
-        if (active) setDrinkPriceState(null);
-      });
-    return () => { active = false; };
-  }, [drinkPriceKey]);
 
   const currentStep = (() => {
     if (!theme) return 1;
@@ -350,13 +339,14 @@ export default function BookingPage() {
   function selectTheme(nextTheme: Theme) {
     setThemeId(nextTheme.id);
     setScheduleId("");
-    setPeople(2);
+    setPeople(nextTheme.id === "honeymoon" ? 2 : 1);
     setGradeId("");
     setHotelOption("");
     setTransportOption("");
     setMealOption("");
     setDrinkOptions([]);
     setSubmitMessage("");
+    setPreviewMessage("");
   }
 
   function selectGrade(nextGradeId: Grade["id"]) {
@@ -366,6 +356,7 @@ export default function BookingPage() {
     setMealOption(nextGrade?.meal ?? "");
     setDrinkOptions(nextGrade?.drink ? [nextGrade.drink] : []);
     setSubmitMessage("");
+    setPreviewMessage("");
   }
 
   function toggleDrink(option: string) {
@@ -466,6 +457,8 @@ export default function BookingPage() {
             <S.SectionDescription>{theme ? `미스터 월드가 기획한 여행 일정이에요. ${departureMinimumPeople}명 이상 모이면 출발이 확정됩니다.` : "테마를 선택하면 상품별 출발 기준을 확인할 수 있어요."}</S.SectionDescription>
             {!theme ? <S.EmptyState>테마를 먼저 고르면 출발 일정이 나와요.</S.EmptyState> : productsLoading ? (
               <S.EmptyState>상품 일정을 불러오는 중입니다.</S.EmptyState>
+            ) : failedThemeCodes.has(THEME_CODES[theme.id]) ? (
+              <S.EmptyState>이 테마의 상품 일정을 불러오지 못했습니다.</S.EmptyState>
             ) : theme.schedules.length > 0 ? (
               <S.ChoiceGrid>
                 {theme.schedules.map((item) => (
@@ -572,8 +565,7 @@ export default function BookingPage() {
                   <S.OptionChoices>
                     {drinkChoices.map((choice) => {
                       const selected = drinkOptions.includes(choice.value);
-                      const apiPrices = drinkPriceState?.key === drinkPriceKey ? drinkPriceState : null;
-                      const price = choice.value === "샴페인" ? apiPrices?.champagne : apiPrices?.coffee;
+                      const price = choice.value === "샴페인" ? FIXED_DRINK_PRICES.champagne : FIXED_DRINK_PRICES.coffee;
                       return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => toggleDrink(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatApiOptionPrice(price)}{choice.value === grade.drink ? " · 등급 기본" : ""}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
@@ -611,7 +603,6 @@ export default function BookingPage() {
             <div><dt>교통</dt><dd>{selectedTransport ?? "–"}</dd></div>
             <div><dt>식사</dt><dd>{selectedMeal ?? "–"}</dd></div>
             <div><dt>추가 음료</dt><dd>{drinkOptions.length ? drinkOptions.join(" · ") : "없음"}</dd></div>
-            <div><dt>추가 옵션</dt><dd>{changedOptions ? `${changedOptions}개` : "없음"}</dd></div>
             <div><dt>신청 인원</dt><dd>{people}명</dd></div>
           </S.SummaryList>
           <S.PriceList>
@@ -621,7 +612,7 @@ export default function BookingPage() {
           </S.PriceList>
           <S.SubmitButton type="submit" disabled={!isComplete}>결제하기</S.SubmitButton>
           <S.SummaryHint>{theme ? "모든 필수 항목과 약관을 확인해 주세요" : "1번에서 테마를 골라 주세요"}</S.SummaryHint>
-          <S.SubmitMessage role="status" aria-live="polite">{submitMessage}</S.SubmitMessage>
+          <S.SubmitMessage role="status" aria-live="polite">{submitMessage || previewMessage}</S.SubmitMessage>
         </S.Summary>
       </S.BookingForm>
 
