@@ -355,7 +355,7 @@ function PriceGroup({ title, items }: { title: string; items: [string, number | 
 
 function formatOptionPrice(value?: number) {
   if (typeof value !== "number") return "정보 없음";
-  if (value === 0) return "0원";
+  if (value === 0) return "+0원";
   return `+${currency.format(value)}원`;
 }
 
