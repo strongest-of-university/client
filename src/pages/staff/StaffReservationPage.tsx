@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { getErrorMessage } from "../../api/client";
 import { getTravelProductBookings, type TravelProductBooking } from "../../services/bookingService";
-import { getTravelProducts, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
+import { getStaffTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProduct, type TravelProductStatus } from "../../services/travelProductService";
 import StaffHeader from "./StaffHeader";
 import * as S from "./StaffReservationPage.styles";
 
-type Status = "recruiting" | "confirmed" | "closed" | "paused";
-type Filter = "all" | Status;
+type Filter = "all" | TravelProductStatus;
 type Applicant = { name: string; people: number; phone: string };
 type ReservationProduct = {
   id: string;
@@ -14,11 +13,10 @@ type ReservationProduct = {
   color: string;
   dates: string;
   duration: string;
-  price: string;
   applicants: number;
   capacity: number;
   minimumApplicants: number;
-  status: Status;
+  status: TravelProductStatus;
   customers: Applicant[];
 };
 
@@ -31,15 +29,31 @@ const THEME_INFO: Record<ThemeCode, { title: string; color: string; code: string
 
 const filters: { id: Filter; label: string }[] = [
   { id: "all", label: "전체" },
-  { id: "recruiting", label: "모집 중" },
-  { id: "confirmed", label: "출발 확정" },
-  { id: "closed", label: "마감" },
-  { id: "paused", label: "판매 중지" },
+  { id: "RECRUITING", label: "모집 중" },
+  { id: "CONFIRMED", label: "출발 확정" },
+  { id: "CLOSED", label: "마감" },
+  { id: "IN_PROGRESS", label: "여행 진행 중" },
+  { id: "COMPLETED", label: "여행 완료" },
+  { id: "CANCELLED", label: "판매 중지" },
 ];
 
-function statusLabel(status: Status) {
-  return { recruiting: "모집 중", confirmed: "출발 확정", closed: "마감", paused: "판매 중지" }[status];
-}
+const STATUS_LABEL: Record<TravelProductStatus, string> = {
+  RECRUITING: "모집 중",
+  CONFIRMED: "출발 확정",
+  CLOSED: "마감",
+  IN_PROGRESS: "여행 진행 중",
+  COMPLETED: "여행 완료",
+  CANCELLED: "판매 중지",
+};
+
+const STATUS_PRIORITY: Record<TravelProductStatus, number> = {
+  RECRUITING: 0,
+  CONFIRMED: 1,
+  IN_PROGRESS: 2,
+  CLOSED: 3,
+  COMPLETED: 4,
+  CANCELLED: 5,
+};
 
 export default function StaffReservationPage() {
   const [filter, setFilter] = useState<Filter>("all");
@@ -78,21 +92,22 @@ export default function StaffReservationPage() {
           {visibleProducts.map((product) => {
             const remaining = Math.max(0, product.minimumApplicants - product.applicants);
             const progress = Math.min(100, (product.applicants / product.capacity) * 100);
+            const confirmed = product.status === "CONFIRMED";
             return (
               <S.Card key={product.id}>
                 <S.CardHeader>
                   <S.Theme><i style={{ background: product.color }} /><span><strong>{product.theme}</strong><small>{product.id}</small></span></S.Theme>
-                  <S.Status $confirmed={product.status === "confirmed"}>{statusLabel(product.status)}</S.Status>
+                  <S.Status $confirmed={confirmed}>{STATUS_LABEL[product.status]}</S.Status>
                 </S.CardHeader>
-                <S.TripInfo>{product.dates} · {product.duration} · {product.price}</S.TripInfo>
+                <S.TripInfo>{product.dates} · {product.duration}</S.TripInfo>
                 <S.ApplicantHeader><span>신청 인원 (최소 {product.minimumApplicants}명)</span><strong>{product.applicants} / {product.capacity}명</strong></S.ApplicantHeader>
                 <S.Progress aria-label={`최대 ${product.capacity}명 중 ${product.applicants}명 신청`}><i style={{ width: `${progress}%` }} /></S.Progress>
                 <S.CustomerList>
                   {product.customers.map((customer) => <li key={`${product.id}-${customer.name}`}><span>{customer.name} · {customer.people}명</span><span>{customer.phone}</span></li>)}
                   {product.customers.length === 0 && <li><span>아직 신청자가 없어요.</span></li>}
                 </S.CustomerList>
-                <S.Confirmation $confirmed={product.status === "confirmed"}>{product.status === "confirmed" ? "출발 확정됨" : `${remaining}명 더 필요`}</S.Confirmation>
-                <S.Help>{product.status === "confirmed" ? "출발이 확정된 상품이에요. 신청자에게 확정 문자가 발송됐어요." : `${product.minimumApplicants}명 이상 신청하면 출발을 확정할 수 있어요.`}</S.Help>
+                <S.Confirmation $confirmed={confirmed}>{statusSummary(product.status, remaining)}</S.Confirmation>
+                <S.Help>{statusHelp(product.status, product.minimumApplicants)}</S.Help>
               </S.Card>
             );
           })}
@@ -105,14 +120,15 @@ export default function StaffReservationPage() {
 }
 
 async function loadReservationProducts() {
-  const groups = await Promise.all((Object.keys(THEME_INFO) as ThemeCode[]).map(async (theme) => {
-    const products = await getTravelProducts(theme);
-    return Promise.all(products.map(async (product) => {
-      const page = await getTravelProductBookings(product.travelProductId);
-      return toReservationProduct(product, theme, page.bookings ?? []);
-    }));
+  const products = await getStaffTravelProducts();
+  const reservationProducts = await Promise.all(products.map(async (product) => {
+    const page = await getTravelProductBookings(product.travelProductId);
+    return toReservationProduct(product, product.theme, page.bookings ?? []);
   }));
-  return groups.flat().sort((a, b) => a.dates.localeCompare(b.dates));
+  return reservationProducts.sort((a, b) =>
+    STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]
+    || a.dates.localeCompare(b.dates),
+  );
 }
 
 function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings: TravelProductBooking[]): ReservationProduct {
@@ -120,23 +136,36 @@ function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings
   const start = product.departureDate.slice(0, 10);
   const end = product.returnDate.slice(0, 10);
   const nights = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86_400_000));
-  const status: Status = product.status === "CONFIRMED" ? "confirmed" : product.status === "CANCELLED" ? "paused" : product.status === "CLOSED" || product.status === "COMPLETED" ? "closed" : "recruiting";
   const activeBookings = bookings.filter((booking) => booking.bookingStatus !== "CANCELLED");
-  const sample = activeBookings[0];
-  const perPerson = sample ? Math.round(sample.paidAmount / Math.max(1, sample.numberOfPeople)) : 0;
   return {
     id: `P-${start.slice(2).replaceAll("-", "")}-${info.code}`,
     theme: info.title,
     color: info.color,
     dates: `${start.replaceAll("-", ".")} – ${end.slice(5).replaceAll("-", ".")}`,
     duration: `${nights}박 ${nights + 1}일`,
-    price: perPerson ? `1인 ${perPerson.toLocaleString("ko-KR")}원` : "결제 내역 없음",
     applicants: product.currentParticipants,
     capacity: product.capacity,
-    minimumApplicants: theme === "HONEYMOON" ? 4 : 3,
-    status,
+    minimumApplicants: minimumApplicantsForTheme(theme),
+    status: product.status,
     customers: activeBookings.map((booking) => ({ name: booking.userName, people: booking.numberOfPeople, phone: maskPhone(booking.phoneNumber) })),
   };
+}
+
+function statusSummary(status: TravelProductStatus, remaining: number) {
+  if (status === "RECRUITING") return `${remaining}명 더 필요`;
+  return STATUS_LABEL[status];
+}
+
+function statusHelp(status: TravelProductStatus, minimumApplicants: number) {
+  const messages: Record<TravelProductStatus, string> = {
+    RECRUITING: `${minimumApplicants}명 이상 신청하면 출발이 확정돼요.`,
+    CONFIRMED: "출발이 확정된 상품이에요. 신청자에게 확정 문자가 발송됐어요.",
+    CLOSED: "예약 접수가 마감된 상품이에요.",
+    IN_PROGRESS: "현재 여행이 진행 중인 상품이에요.",
+    COMPLETED: "여행이 완료된 상품이에요.",
+    CANCELLED: "상품 자체가 취소되어 판매가 중지됐어요.",
+  };
+  return messages[status];
 }
 
 function maskPhone(phone: string) {

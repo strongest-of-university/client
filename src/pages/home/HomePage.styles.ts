@@ -100,6 +100,14 @@ export const GuestCard = styled.div`
   }
 `;
 export const ReservationList = styled.div``;
+export const DataError = styled.p`
+  margin: 0;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-divider);
+  color: #a63d24;
+  font-size: 14px;
+  line-height: 1.6;
+`;
 export const ReservationRow = styled.article`
   min-height: 109px;
   padding: 22px 0;

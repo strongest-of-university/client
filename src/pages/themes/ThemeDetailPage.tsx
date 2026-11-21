@@ -1,20 +1,30 @@
 import Header from "../../components/Header";
 import { useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
-import { getTravelProduct, getTravelProducts, type ThemeCode } from "../../services/travelProductService";
+import { getTravelProduct, getTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProductStatus } from "../../services/travelProductService";
 import { useAuth } from "../../contexts/auth/authContext";
 import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
 import * as S from "./ThemeDetailPage.styles";
 import { themeLinks, type ThemeDetail } from "./themeDetails";
+
+type Departure = {
+  id: string;
+  dates: string;
+  duration: string;
+  price: string;
+  applicants: number;
+  capacity: number;
+  status: TravelProductStatus;
+};
 
 export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
   const { isAuthenticated } = useAuth();
   const { saveBookingDraft } = useBookingDraft();
   const { features } = theme;
   const otherThemes = themeLinks.filter((item) => item.id !== theme.id);
+  const tourStyles = theme.tourStyles.filter((style) => !style.unavailable);
   const [selectedDeparture, setSelectedDeparture] = useState<string | null>(null);
-  const [departures, setDepartures] = useState<ThemeDetail["departures"]>([]);
-  const [tourStyles, setTourStyles] = useState<ThemeDetail["tourStyles"]>([]);
+  const [departures, setDepartures] = useState<Departure[]>([]);
   const [message, setMessage] = useState("여행 상품을 불러오는 중입니다.");
 
   useEffect(() => {
@@ -23,7 +33,9 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
       .then((products) => Promise.all(products.map((product) => getTravelProduct(product.travelProductId).catch(() => product))))
       .then((products) => {
         if (!active) return;
-        const availableProducts = products.filter((product) => product.status !== "CANCELLED");
+        const availableProducts = products.filter(
+          (product) => product.status === "RECRUITING" || product.status === "CONFIRMED",
+        );
         setDepartures(availableProducts.map((product) => {
             const start = new Date(product.departureDate);
             const end = new Date(product.returnDate);
@@ -32,18 +44,17 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
               id: String(product.travelProductId),
               dates: `${displayDate(start, true)} – ${displayDate(end)}`,
               duration: `${nights}박 ${nights + 1}일`,
-              price: minimumProductPrice(product)?.toLocaleString("ko-KR") ?? "가격 정보 없음",
+              price: minimumProductPrice(product, theme.id)?.toLocaleString("ko-KR") ?? "가격 정보 없음",
               applicants: product.currentParticipants,
               capacity: product.capacity,
+              status: product.status,
             };
           }));
-        setTourStyles(availableProducts[0] ? productTourStyles(availableProducts[0], theme) : []);
         setMessage(availableProducts.length === 0 ? "현재 모집 중인 여행 상품이 없습니다." : "");
       })
       .catch((error) => {
         if (!active) return;
         setDepartures([]);
-        setTourStyles([]);
         setMessage(isAuthenticated ? getErrorMessage(error) : "로그인하면 모집 중인 여행 상품을 확인할 수 있습니다.");
       });
     return () => { active = false; };
@@ -97,8 +108,8 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
                   <S.DepartureCard key={departure.id} aria-labelledby={`departure-${departure.id}`}>
                     <S.CardHeading>
                       <S.DepartureTitle id={`departure-${departure.id}`}>{departure.dates}</S.DepartureTitle>
-                      <S.Badge $confirmed={departure.applicants >= 3}>
-                        {departure.applicants >= 3 ? "출발 확정" : "모집 중"}
+                      <S.Badge $confirmed={departure.status === "CONFIRMED"}>
+                        {PRODUCT_STATUS_LABEL[departure.status]}
                       </S.Badge>
                     </S.CardHeading>
                     <S.DetailRow>
@@ -106,7 +117,7 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
                       <strong>{departure.price === "가격 정보 없음" ? departure.price : `1인 ${departure.price}원부터`}</strong>
                     </S.DetailRow>
                     <S.CapacityRow>
-                      <span>신청 인원 (최소 3명)</span>
+                      <span>신청 인원 (최소 {minimumApplicantsForTheme(theme.id.toUpperCase() as ThemeCode)}명)</span>
                       <strong>{departure.applicants} / {departure.capacity}명</strong>
                     </S.CapacityRow>
                     <S.CapacityBar
@@ -136,13 +147,11 @@ export default function ThemeDetailPage({ theme }: { theme: ThemeDetail }) {
             <S.SectionTitle id="tour-style-title" $compact>Tour Style</S.SectionTitle>
             <S.ThreeColumns>
               {tourStyles.map((style) => (
-                <S.StyleCard key={style.name} $unavailable={style.unavailable}>
+                <S.StyleCard key={style.name}>
                   <S.CardHeading>
                     <S.StyleTitle>{style.name}</S.StyleTitle>
-                    <S.StylePrice>{style.price}원~</S.StylePrice>
                   </S.CardHeading>
                   <S.StyleDescription>{style.hotel}<br />{style.meal}</S.StyleDescription>
-                  {style.unavailable && <S.UnavailableNote>이 테마에서는 선택 불가</S.UnavailableNote>}
                 </S.StyleCard>
               ))}
             </S.ThreeColumns>
@@ -172,25 +181,21 @@ function displayDate(date: Date, year = false) {
   }).format(date).replaceAll(". ", ".").replace(/\.$/, "");
 }
 
-function minimumProductPrice(product: Awaited<ReturnType<typeof getTravelProduct>>) {
-  const required = [product.baseServicePrice, product.flightPrice];
-  const hotel = [product.threeStarHotelPrice, product.fourStarHotelPrice, product.fiveStarHotelPrice].filter((value): value is number => typeof value === "number");
-  const meal = [product.lunchPrice, product.localRestaurantPrice, product.steakPrice].filter((value): value is number => typeof value === "number");
-  const transport = [product.luxuryCarPrice, product.luxuryVanPrice].filter((value): value is number => typeof value === "number");
-  if (required.some((value) => typeof value !== "number") || hotel.length === 0 || meal.length === 0 || transport.length === 0) return undefined;
-  return (product.baseServicePrice ?? 0) + (product.flightPrice ?? 0) + Math.min(...hotel) + Math.min(...meal) + Math.min(...transport);
-}
+const PRODUCT_STATUS_LABEL: Record<TravelProductStatus, string> = {
+  RECRUITING: "모집 중",
+  CONFIRMED: "출발 확정",
+  CLOSED: "모집 마감",
+  IN_PROGRESS: "여행 진행 중",
+  COMPLETED: "여행 완료",
+  CANCELLED: "판매 중지",
+};
 
-function productTourStyles(product: Awaited<ReturnType<typeof getTravelProduct>>, theme: ThemeDetail): ThemeDetail["tourStyles"] {
-  const base = (product.baseServicePrice ?? 0) + (product.flightPrice ?? 0);
-  const transport = theme.id === "honeymoon" ? product.luxuryCarPrice ?? 0 : product.luxuryVanPrice ?? 0;
-  const prices = [
-    base + transport + (product.threeStarHotelPrice ?? 0) + (product.lunchPrice ?? 0),
-    base + transport + (product.fourStarHotelPrice ?? 0) + (product.localRestaurantPrice ?? 0),
-    base + transport + (product.fiveStarHotelPrice ?? 0) + (product.steakPrice ?? 0),
-  ];
-  return theme.tourStyles.map((style, index) => ({
-    ...style,
-    price: prices[index].toLocaleString("ko-KR"),
-  }));
+function minimumProductPrice(product: Awaited<ReturnType<typeof getTravelProduct>>, themeId: string) {
+  const grandOrHigher = themeId === "honeymoon" || themeId === "healing";
+  const hotelPrice = grandOrHigher ? product.fourStarHotelPrice : product.threeStarHotelPrice;
+  const mealPrice = grandOrHigher ? product.localRestaurantPrice : product.lunchPrice;
+  const transportPrice = themeId === "honeymoon" ? product.luxuryCarPrice : product.luxuryVanPrice;
+  const prices = [product.baseServicePrice, hotelPrice, mealPrice, transportPrice];
+  if (!prices.every((price): price is number => typeof price === "number")) return undefined;
+  return prices.reduce((total, price) => total + price, 0);
 }

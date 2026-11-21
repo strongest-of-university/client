@@ -1,10 +1,12 @@
+import { minimumApplicantsForTheme } from "../../services/travelProductService";
+
 export const notices = [
   {
     id: "departure-confirmation",
-    title: "신청 인원 3명 이상 시 출발이 확정됩니다",
+    title: "테마별 최소 신청 인원 충족 시 출발이 확정됩니다",
     date: "2026.09.28",
     paragraphs: [
-      "미스터 월드의 모든 테마 여행 상품은 신청 인원이 3명 이상 모이면 출발이 확정됩니다.",
+      `허니문 낭만 투어는 ${minimumApplicantsForTheme("HONEYMOON")}명 이상, 그 외 테마 여행은 ${minimumApplicantsForTheme("GOLF")}명 이상 신청하면 출발이 확정됩니다.`,
       "출발이 확정되면 가입 시 등록하신 휴대폰 번호로 확정 안내 문자를 보내 드립니다. 확정 여부는 마이페이지의 예약 카드에서도 확인할 수 있습니다.",
       "출발이 확정된 상품은 예약을 취소할 수 없으니, 일정을 확인하신 뒤 신청해 주세요.",
     ],

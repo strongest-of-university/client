@@ -22,10 +22,12 @@ type Reservation = {
     hotel: string;
     transport: string;
     meal: string;
+    drink: string;
     gift: string;
     payment: string;
   };
   cancelState?: "available" | "unavailable";
+  paymentAmount?: number;
   cancellationFee?: number;
   refundAmount?: number;
 };
@@ -44,9 +46,9 @@ export default function MyPage() {
   const [profileMessage, setProfileMessage] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<"history" | "profile">("history");
-  const cancelAmount = cancelTarget ? Number(cancelTarget.details.payment.replace(/\D/g, "")) : 0;
-  const cancellationFee = cancelTarget?.cancellationFee ?? Math.round(cancelAmount * 0.1);
-  const refundAmount = cancelTarget?.refundAmount ?? cancelAmount - cancellationFee;
+  const cancelAmount = cancelTarget?.paymentAmount;
+  const cancellationFee = cancelTarget?.cancellationFee ?? (cancelAmount === undefined ? undefined : Math.round(cancelAmount * 0.1));
+  const refundAmount = cancelTarget?.refundAmount ?? (cancelAmount === undefined || cancellationFee === undefined ? undefined : cancelAmount - cancellationFee);
 
   useEffect(() => {
     let active = true;
@@ -221,6 +223,7 @@ export default function MyPage() {
                       <div><dt>호텔</dt><dd>{reservation.details.hotel}</dd></div>
                       <div><dt>교통</dt><dd>{reservation.details.transport}</dd></div>
                       <div><dt>식사</dt><dd>{reservation.details.meal}</dd></div>
+                      <div><dt>추가 음료</dt><dd>{reservation.details.drink}</dd></div>
                       <div><dt>기념품</dt><dd>{reservation.details.gift}</dd></div>
                       <div><dt>결제 금액</dt><dd>{reservation.details.payment}</dd></div>
                     </S.DetailList>
@@ -300,9 +303,9 @@ export default function MyPage() {
               {cancelTarget.title} · {cancelTarget.details.period} · {cancelTarget.details.grade} · {cancelTarget.details.people} · {cancelTarget.details.payment}
             </S.CancelSummary>
             <S.RefundBox>
-              <div><span>결제 금액</span><strong>{cancelAmount.toLocaleString("ko-KR")}원</strong></div>
-              <div><span>위약금 (확정 전 10%)</span><strong className="fee">−{cancellationFee.toLocaleString("ko-KR")}원</strong></div>
-              <div className="refund"><span>환불 예정</span><strong>{refundAmount.toLocaleString("ko-KR")}원</strong></div>
+              <div><span>결제 금액</span><strong>{formatPaymentAmount(cancelAmount)}</strong></div>
+              <div><span>위약금 (확정 전 10%)</span><strong className="fee">{cancellationFee === undefined ? "정보 없음" : `−${cancellationFee.toLocaleString("ko-KR")}원`}</strong></div>
+              <div className="refund"><span>환불 예정</span><strong>{formatPaymentAmount(refundAmount)}</strong></div>
             </S.RefundBox>
             <S.CancellationRule>위약금 기준(예시): 출발 확정 전 10%, 출발 확정 후 30%</S.CancellationRule>
             <S.CancelActions>
@@ -324,7 +327,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const LEVEL_LABEL: Record<string, string> = { CLASSIC: "클래식", GRAND: "그랜드", PREMIUM: "프리미엄" };
-const MEAL_LABEL: Record<number, string> = { 1: "도시락", 2: "현지식 레스토랑", 3: "스테이크 & 샴페인" };
+const MEAL_LABEL: Record<number, string> = { 1: "도시락", 2: "현지식 레스토랑", 3: "스테이크" };
+const DRINK_LABEL: Record<number, string> = { 0: "없음", 1: "샴페인", 2: "커피", 3: "샴페인과 커피" };
 const TRANSPORT_LABEL: Record<number, string> = { 1: "2인 고급차량", 2: "10인 승합 고급차량" };
 const GIFT_LABEL: Record<string, string> = { HONEYMOON: "커플 기념티", HEALING: "건강 인삼", GOLF: "골프공", TREKKING: "아웃도어 스카프" };
 
@@ -350,11 +354,14 @@ const GIFT_THEME_TITLE: Record<string, string> = { HONEYMOON: "허니문 낭만 
 function toReservation(booking: BookingDto): Reservation {
   const title = productName(booking);
   const people = booking.numberOfPeople ?? 0;
-  const price = booking.totalPrice ?? 0;
+  const price = booking.totalPrice;
+  const payment = formatPaymentAmount(price);
   const grade = LEVEL_LABEL[booking.tourLevel ?? ""] ?? booking.tourLevel ?? "등급 미정";
   const hotel = booking.selectedHotel ? `${booking.selectedHotel}성급 호텔` : "호텔 미정";
   const transport = TRANSPORT_LABEL[booking.selectedTransportation ?? 0] ?? "교통 미정";
   const meal = MEAL_LABEL[booking.selectedMeal ?? 0] ?? "식사 미정";
+  const drink = DRINK_LABEL[booking.selectedDrink ?? 0] ?? "음료 미정";
+  const optionDrink = (booking.selectedDrink ?? 0) > 0 ? ` / ${drink}` : "";
   const theme = booking.theme ?? (typeof booking.travelProduct === "object" ? booking.travelProduct?.theme : undefined) ?? "";
   const status = STATUS_LABEL[booking.bookingStatus] ?? booking.bookingStatus;
   const cancelled = booking.bookingStatus === "CANCELLED";
@@ -365,8 +372,8 @@ function toReservation(booking: BookingDto): Reservation {
     status,
     reservationNumber: `MW-${String(booking.bookingId).padStart(6, "0")}`,
     title,
-    summary: `${formatDate(booking.departureDate)} – ${formatDate(booking.returnDate)} · ${people}명 · ${price.toLocaleString("ko-KR")}원`,
-    option: `${grade} / ${hotel} / ${meal}`,
+    summary: `${formatDate(booking.departureDate)} – ${formatDate(booking.returnDate)} · ${people}명 · ${payment}`,
+    option: `${grade} / ${hotel} / ${meal}${optionDrink}`,
     details: {
       period: `${formatDate(booking.departureDate, true)} – ${formatDate(booking.returnDate, true)}`,
       people: `${people}명`,
@@ -374,11 +381,17 @@ function toReservation(booking: BookingDto): Reservation {
       hotel,
       transport,
       meal,
+      drink,
       gift: GIFT_LABEL[theme] ?? "기념품 미정",
-      payment: `${price.toLocaleString("ko-KR")}원`,
+      payment,
     },
     cancelState: cancelled ? undefined : unavailable ? "unavailable" : "available",
+    paymentAmount: price,
     cancellationFee: booking.cancellationFee,
     refundAmount: booking.refundAmount,
   };
+}
+
+function formatPaymentAmount(value?: number) {
+  return value === undefined ? "결제 금액 정보 없음" : `${value.toLocaleString("ko-KR")}원`;
 }

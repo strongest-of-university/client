@@ -4,6 +4,10 @@ import { collectionItems, type CollectionResponse } from "./collectionResponse";
 export type ThemeCode = "GOLF" | "HONEYMOON" | "HEALING" | "TREKKING";
 export type TravelProductStatus = "RECRUITING" | "CONFIRMED" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
 
+export function minimumApplicantsForTheme(theme: ThemeCode) {
+  return theme === "HONEYMOON" ? 4 : 3;
+}
+
 export type TravelProduct = {
   travelProductId: number;
   departureDate: string;
@@ -44,8 +48,16 @@ export type TravelProductCreateRequest = {
 };
 
 export async function getTravelProducts(theme: ThemeCode) {
-  const result = await apiRequest<CollectionResponse<TravelProduct>>(`/api/v1/travel-products?theme=${theme}`);
+  const result = await apiRequest<CollectionResponse<TravelProduct>>(`/api/v1/travel-products?theme=${encodeURIComponent(theme)}`);
   return collectionItems(result).map((product) => ({ ...product, theme: product.theme ?? theme }));
+}
+
+export async function getStaffTravelProducts() {
+  const result = await apiRequest<CollectionResponse<TravelProduct>>("/api/v1/travel-products/staff");
+  return collectionItems(result).map((product) => {
+    if (!product.theme) throw new Error("직원용 상품 응답에 테마 정보가 없습니다.");
+    return { ...product, theme: product.theme } as TravelProduct & { theme: ThemeCode };
+  });
 }
 
 export function getTravelProduct(travelProductId: number) {

@@ -244,12 +244,12 @@ export const ThreeColumns = styled.div`
   @media (max-width: 850px) { grid-template-columns: 1fr; }
 `;
 
-export const StyleCard = styled.article<{ $unavailable: boolean }>`
+export const StyleCard = styled.article`
   min-height: 148px;
   padding: 20px;
-  border: 1px solid ${({ $unavailable }) => ($unavailable ? "#ece7df" : "#dacebd")};
+  border: 1px solid #dacebd;
   border-radius: 16px;
-  color: ${({ $unavailable }) => ($unavailable ? "#999" : "var(--color-text)")};
+  color: var(--color-text);
 `;
 
 export const StyleTitle = styled.h3`
@@ -257,22 +257,10 @@ export const StyleTitle = styled.h3`
   font-size: 18px;
 `;
 
-export const StylePrice = styled.span`
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-`;
-
 export const StyleDescription = styled.p`
   margin: 0;
   font-size: 14px;
   line-height: 1.65;
-`;
-
-export const UnavailableNote = styled.p`
-  margin: 8px 0 0;
-  color: #a9604c;
-  font-size: 12px;
 `;
 
 export const OtherTheme = styled.a<{ $color: string }>`
