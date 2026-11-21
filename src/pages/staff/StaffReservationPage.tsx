@@ -17,6 +17,7 @@ type ReservationProduct = {
   price: string;
   applicants: number;
   capacity: number;
+  minimumApplicants: number;
   status: Status;
   customers: Applicant[];
 };
@@ -64,7 +65,7 @@ export default function StaffReservationPage() {
       <S.Main>
         <S.Eyebrow>RESERVATION</S.Eyebrow>
         <S.Title>예약 현황</S.Title>
-        <S.Description>상품별 신청 인원을 확인하고, 3명 이상이면 출발 확정 문자를 보내요.</S.Description>
+        <S.Description>상품별 신청 인원과 출발 기준을 확인하고 확정 문자를 보내요.</S.Description>
 
         <S.Filters aria-label="예약 상태 필터">
           {filters.map((item) => {
@@ -75,7 +76,7 @@ export default function StaffReservationPage() {
 
         <S.Grid>
           {visibleProducts.map((product) => {
-            const remaining = Math.max(0, 3 - product.applicants);
+            const remaining = Math.max(0, product.minimumApplicants - product.applicants);
             const progress = Math.min(100, (product.applicants / product.capacity) * 100);
             return (
               <S.Card key={product.id}>
@@ -84,14 +85,14 @@ export default function StaffReservationPage() {
                   <S.Status $confirmed={product.status === "confirmed"}>{statusLabel(product.status)}</S.Status>
                 </S.CardHeader>
                 <S.TripInfo>{product.dates} · {product.duration} · {product.price}</S.TripInfo>
-                <S.ApplicantHeader><span>신청 인원 (최소 3명)</span><strong>{product.applicants} / {product.capacity}명</strong></S.ApplicantHeader>
+                <S.ApplicantHeader><span>신청 인원 (최소 {product.minimumApplicants}명)</span><strong>{product.applicants} / {product.capacity}명</strong></S.ApplicantHeader>
                 <S.Progress aria-label={`최대 ${product.capacity}명 중 ${product.applicants}명 신청`}><i style={{ width: `${progress}%` }} /></S.Progress>
                 <S.CustomerList>
                   {product.customers.map((customer) => <li key={`${product.id}-${customer.name}`}><span>{customer.name} · {customer.people}명</span><span>{customer.phone}</span></li>)}
                   {product.customers.length === 0 && <li><span>아직 신청자가 없어요.</span></li>}
                 </S.CustomerList>
                 <S.Confirmation $confirmed={product.status === "confirmed"}>{product.status === "confirmed" ? "출발 확정됨" : `${remaining}명 더 필요`}</S.Confirmation>
-                <S.Help>{product.status === "confirmed" ? "출발이 확정된 상품이에요. 신청자에게 확정 문자가 발송됐어요." : "3명 이상 신청하면 출발을 확정할 수 있어요."}</S.Help>
+                <S.Help>{product.status === "confirmed" ? "출발이 확정된 상품이에요. 신청자에게 확정 문자가 발송됐어요." : `${product.minimumApplicants}명 이상 신청하면 출발을 확정할 수 있어요.`}</S.Help>
               </S.Card>
             );
           })}
@@ -132,6 +133,7 @@ function toReservationProduct(product: TravelProduct, theme: ThemeCode, bookings
     price: perPerson ? `1인 ${perPerson.toLocaleString("ko-KR")}원` : "결제 내역 없음",
     applicants: product.currentParticipants,
     capacity: product.capacity,
+    minimumApplicants: theme === "HONEYMOON" ? 4 : 3,
     status,
     customers: activeBookings.map((booking) => ({ name: booking.userName, people: booking.numberOfPeople, phone: maskPhone(booking.phoneNumber) })),
   };

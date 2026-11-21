@@ -202,17 +202,15 @@ export default function StaffPage() {
             <S.OptionHelp>선택 가능한 호텔·식사·교통의 추가 금액을 각각 입력해 주세요. 선택 불가 항목은 상품에 포함되지 않아요.</S.OptionHelp>
             <S.OptionGroup>
               <S.FieldLabel>호텔</S.FieldLabel>
-              <S.OptionGrid $columns={3}>{["3성 호텔", "4성 호텔", "5성 호텔"].map((name) => {
-                const unavailable = requiresGrandOrHigher && name === "3성 호텔";
-                return <S.OptionCard key={name} $selected={false} $unavailable={unavailable}><S.OptionCardTitle>{name}</S.OptionCardTitle>{unavailable ? <S.UnavailablePrice>이 테마 선택 불가</S.UnavailablePrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={hotelPrices[name]} onChange={(event) => setHotelPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice>}</S.OptionCard>;
-              })}</S.OptionGrid>
+              <S.OptionGrid $columns={requiresGrandOrHigher ? 2 : 3}>{(requiresGrandOrHigher ? ["4성 호텔", "5성 호텔"] : ["3성 호텔", "4성 호텔", "5성 호텔"]).map((name) => (
+                <S.OptionCard key={name} $selected={false}><S.OptionCardTitle>{name}</S.OptionCardTitle><S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={hotelPrices[name]} onChange={(event) => setHotelPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice></S.OptionCard>
+              ))}</S.OptionGrid>
             </S.OptionGroup>
             <S.OptionGroup>
               <S.FieldLabel>식사</S.FieldLabel>
-              <S.OptionGrid $columns={3}>{["도시락", "현지식 레스토랑", "스테이크"].map((name) => {
-                const unavailable = requiresGrandOrHigher && name === "도시락";
-                return <S.OptionCard key={name} $selected={false} $unavailable={unavailable}><S.OptionCardTitle>{name}</S.OptionCardTitle>{unavailable ? <S.UnavailablePrice>이 테마 선택 불가</S.UnavailablePrice> : <S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={mealPrices[name]} onChange={(event) => setMealPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice>}</S.OptionCard>;
-              })}</S.OptionGrid>
+              <S.OptionGrid $columns={requiresGrandOrHigher ? 2 : 3}>{(requiresGrandOrHigher ? ["현지식 레스토랑", "스테이크"] : ["도시락", "현지식 레스토랑", "스테이크"]).map((name) => (
+                <S.OptionCard key={name} $selected={false}><S.OptionCardTitle>{name}</S.OptionCardTitle><S.EditablePrice><b>+</b><input aria-label={`${name} 추가 금액`} type="number" min="0" step="1000" value={mealPrices[name]} onChange={(event) => setMealPrices((current) => ({ ...current, [name]: event.target.value }))} required /></S.EditablePrice></S.OptionCard>
+              ))}</S.OptionGrid>
             </S.OptionGroup>
             <S.OptionGroup>
               <S.FieldLabel>교통</S.FieldLabel>
@@ -258,12 +256,12 @@ export default function StaffPage() {
                         <PriceItem label="항공" value={product.optionPrices.flight} />
                       </S.BasePriceGrid>
                       <PriceGroup title="호텔" items={[
-                        ["3성 호텔", product.optionPrices.threeStarHotel],
+                        ...(requiresGrandOrHigherTheme(product.themeId) ? [] : [["3성 호텔", product.optionPrices.threeStarHotel] as [string, number | undefined]]),
                         ["4성 호텔", product.optionPrices.fourStarHotel],
                         ["5성 호텔", product.optionPrices.fiveStarHotel],
                       ]} />
                       <PriceGroup title="식사" items={[
-                        ["도시락", product.optionPrices.lunch],
+                        ...(requiresGrandOrHigherTheme(product.themeId) ? [] : [["도시락", product.optionPrices.lunch] as [string, number | undefined]]),
                         ["현지식 레스토랑", product.optionPrices.localRestaurant],
                         ["스테이크", product.optionPrices.steak],
                       ]} />
@@ -357,6 +355,10 @@ function PriceGroup({ title, items }: { title: string; items: [string, number | 
 
 function formatOptionPrice(value?: number) {
   if (typeof value !== "number") return "정보 없음";
-  if (value === 0) return "기본가 포함";
+  if (value === 0) return "0원";
   return `+${currency.format(value)}원`;
+}
+
+function requiresGrandOrHigherTheme(themeId: ThemeId) {
+  return themeId === "honeymoon" || themeId === "healing";
 }
