@@ -411,8 +411,9 @@ export const PriceList = styled(SummaryList)`
 
   div:last-child {
     display: grid;
-    gap: 8px;
-    justify-items: end;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
     margin-top: 4px;
   }
 

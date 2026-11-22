@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { FiAlertTriangle, FiChevronDown } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import { createTravelProduct, deleteTravelProduct, getTravelProduct, getTravelProducts, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
+import { getInventory, type InventoryApiItem } from "../../services/inventoryService";
+import { createTravelProduct, deleteTravelProduct, getStaffTravelProducts, getTravelProduct, minimumApplicantsForTheme, type ThemeCode, type TravelProduct, type TravelProductStatus } from "../../services/travelProductService";
 import Modal from "../../components/Modal";
 import StaffHeader from "./StaffHeader";
-import { loadInventory, type InventoryId } from "./staffInventory";
+import StaffProductStatus from "./StaffProductStatusBadge";
+import { type InventoryId } from "./staffInventory";
 import * as S from "./StaffPage.styles";
 
 type ThemeId = "honeymoon" | "healing" | "golf" | "trekking";
@@ -16,13 +18,12 @@ type Product = {
   start: string;
   end: string;
   duration: string;
-  price: number;
+  price?: number;
   applicants: number;
   capacity: number;
-  status: "모집 중" | "출발 확정" | "판매 취소";
+  status: TravelProductStatus;
   optionPrices: {
     baseService?: number;
-    flight?: number;
     threeStarHotel?: number;
     fourStarHotel?: number;
     fiveStarHotel?: number;
@@ -35,7 +36,7 @@ type Product = {
 };
 
 const currency = new Intl.NumberFormat("ko-KR");
-const FIXED_DRINK_PRICES = { champagne: 40000, coffee: 7000 } as const;
+const FIXED_DRINK_PRICES = { champagne: 70_000, coffee: 15_000 } as const;
 const themeInfo: Record<ThemeId, { title: string; category: string; color: string; code: string; gift: string; inventoryId: InventoryId; unit: string }> = {
   honeymoon: { title: "허니문 낭만 투어", category: "허니문", color: "#8b3140", code: "HNY", gift: "커플 기념티", inventoryId: "couple-shirt", unit: "벌" },
   healing: { title: "효도 힐링 투어", category: "힐링", color: "#8a7129", code: "HLG", gift: "건강 인삼", inventoryId: "ginseng", unit: "박스" },
@@ -45,6 +46,12 @@ const themeInfo: Record<ThemeId, { title: string; category: string; color: strin
 
 const THEME_TO_API: Record<ThemeId, ThemeCode> = { honeymoon: "HONEYMOON", healing: "HEALING", golf: "GOLF", trekking: "TREKKING" };
 const API_TO_THEME: Record<ThemeCode, ThemeId> = { HONEYMOON: "honeymoon", HEALING: "healing", GOLF: "golf", TREKKING: "trekking" };
+const INVENTORY_API_TO_ID: Record<InventoryApiItem, InventoryId> = {
+  COUPLE_TSHIRT: "couple-shirt",
+  GINSENG: "ginseng",
+  GOLF_BALL: "golf-ball",
+  SCARF: "scarf",
+};
 
 function toDisplayDate(value: string) {
   return value.replaceAll("-", ".");
@@ -53,6 +60,12 @@ function toDisplayDate(value: string) {
 function durationBetween(start: string, end: string) {
   const nights = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000));
   return `${nights}박 ${nights + 1}일`;
+}
+
+function nextDate(date: string) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + 1);
+  return value.toISOString().slice(0, 10);
 }
 
 export default function StaffPage() {
@@ -66,19 +79,28 @@ export default function StaffPage() {
   const [mealPrices, setMealPrices] = useState<Record<string, string>>({ "도시락": "", "현지식 레스토랑": "", "스테이크": "" });
   const [transportPrices, setTransportPrices] = useState<Record<string, string>>({ "2인 고급차량": "", "10인 승합 고급차량": "" });
   const [products, setProducts] = useState<Product[]>([]);
-  const [inventory] = useState(loadInventory);
+  const [inventoryQuantities, setInventoryQuantities] = useState<Partial<Record<InventoryId, number>>>({});
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [inventoryError, setInventoryError] = useState("");
   const [productFilter, setProductFilter] = useState<"all" | ThemeId>("all");
   const [message, setMessage] = useState("");
   const [productMessage, setProductMessage] = useState("");
   const [cancelTarget, setCancelTarget] = useState<Product | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const cancelCloseTimerRef = useRef<number | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const selectedTheme = themeId ? themeInfo[themeId] : null;
   const requiresGrandOrHigher = themeId === "honeymoon" || themeId === "healing";
-  const selectedStock = selectedTheme ? inventory[selectedTheme.inventoryId] : null;
+  const minimumCapacity = themeId ? minimumApplicantsForTheme(THEME_TO_API[themeId]) : 3;
+  const selectedStockAmount = selectedTheme ? inventoryQuantities[selectedTheme.inventoryId] : undefined;
   const capacity = Number(capacityInput) || 0;
   const basePrice = Number(basePriceInput) || 0;
-  const stockShortage = selectedStock ? Math.max(0, capacity - selectedStock.amount) : 0;
+
+  useEffect(() => () => {
+    if (cancelCloseTimerRef.current !== null) window.clearTimeout(cancelCloseTimerRef.current);
+  }, []);
+  const stockShortage = selectedStockAmount === undefined ? 0 : Math.max(0, capacity - selectedStockAmount);
   const filteredProducts = useMemo(
     () => productFilter === "all" ? products : products.filter((product) => product.themeId === productFilter),
     [productFilter, products],
@@ -92,17 +114,46 @@ export default function StaffPage() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    loadInventoryQuantities()
+      .then((quantities) => {
+        if (!active) return;
+        setInventoryQuantities(quantities);
+        setInventoryError("");
+      })
+      .catch((error) => {
+        if (active) setInventoryError(getErrorMessage(error));
+      })
+      .finally(() => {
+        if (active) setInventoryLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
   async function registerProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!themeId || !selectedTheme || !selectedStock) {
+    if (!themeId || !selectedTheme) {
       setMessage("상품 테마를 먼저 선택해 주세요.");
+      return;
+    }
+    if (selectedStockAmount === undefined) {
+      setMessage("서버 재고를 확인할 수 없어 상품을 등록할 수 없습니다.");
       return;
     }
     if (!startDate || !endDate || new Date(endDate) <= new Date(startDate)) {
       setMessage("여행 종료일은 시작일보다 늦어야 합니다.");
       return;
     }
-    if (selectedStock.amount < capacity) {
+    if (capacity < minimumCapacity) {
+      setMessage(`${selectedTheme.title}의 최대 인원은 최소 ${minimumCapacity}명이어야 합니다.`);
+      return;
+    }
+    if (themeId === "honeymoon" && capacity % 2 !== 0) {
+      setMessage("허니문 상품의 최대 인원은 짝수로 입력해 주세요.");
+      return;
+    }
+    if (selectedStockAmount < capacity) {
       setMessage(`${selectedTheme.gift} 재고가 최대 인원보다 부족합니다.`);
       return;
     }
@@ -129,6 +180,12 @@ export default function StaffPage() {
       });
       const nextProducts = await loadProducts();
       setProducts(nextProducts);
+      try {
+        setInventoryQuantities(await loadInventoryQuantities());
+        setInventoryError("");
+      } catch (error) {
+        setInventoryError(getErrorMessage(error));
+      }
       setMessage(`${selectedTheme.title} 상품이 등록되었습니다.`);
       setProductMessage(`${selectedTheme.title} 상품이 등록되었습니다.`);
       setActiveView("list");
@@ -141,17 +198,41 @@ export default function StaffPage() {
 
   async function cancelProduct() {
     if (!cancelTarget) return;
+    const target = cancelTarget;
     setSubmitting(true);
     try {
-      await deleteTravelProduct(Number(cancelTarget.id));
-      setProducts(await loadProducts());
-      setProductMessage(`${cancelTarget.title} ${cancelTarget.start} 상품이 취소되었습니다.`);
-      setCancelTarget(null);
+      await deleteTravelProduct(Number(target.id));
+      setCancelModalOpen(false);
+      if (cancelCloseTimerRef.current !== null) window.clearTimeout(cancelCloseTimerRef.current);
+      cancelCloseTimerRef.current = window.setTimeout(() => {
+        setProducts((current) => sortProducts(current.map((product) =>
+          product.id === target.id ? { ...product, status: "CANCELLED" } : product,
+        )));
+        setProductMessage(`${target.title} ${target.start} 상품이 취소되었습니다.`);
+        setCancelTarget(null);
+        setSubmitting(false);
+        cancelCloseTimerRef.current = null;
+      }, 500);
     } catch (error) {
       setProductMessage(getErrorMessage(error));
-    } finally {
       setSubmitting(false);
     }
+  }
+
+  function openCancelModal(product: Product) {
+    if (cancelCloseTimerRef.current !== null) window.clearTimeout(cancelCloseTimerRef.current);
+    cancelCloseTimerRef.current = null;
+    setCancelTarget(product);
+    setCancelModalOpen(true);
+  }
+
+  function closeCancelModal() {
+    setCancelModalOpen(false);
+    if (cancelCloseTimerRef.current !== null) window.clearTimeout(cancelCloseTimerRef.current);
+    cancelCloseTimerRef.current = window.setTimeout(() => {
+      setCancelTarget(null);
+      cancelCloseTimerRef.current = null;
+    }, 500);
   }
 
   return (
@@ -174,7 +255,11 @@ export default function StaffPage() {
             <S.FieldLabel>테마</S.FieldLabel>
             <S.ThemeGrid>
               {(Object.entries(themeInfo) as [ThemeId, (typeof themeInfo)[ThemeId]][]).map(([id, info]) => (
-                <S.ThemeButton key={id} type="button" $selected={themeId === id} onClick={() => setThemeId(id)}>
+                <S.ThemeButton key={id} type="button" $selected={themeId === id} onClick={() => {
+                  setThemeId(id);
+                  const nextMinimumCapacity = minimumApplicantsForTheme(THEME_TO_API[id]);
+                  setCapacityInput((current) => current && (Number(current) < nextMinimumCapacity || (id === "honeymoon" && Number(current) % 2 !== 0)) ? "" : current);
+                }}>
                   <i style={{ background: info.color }} />{info.title}
                 </S.ThemeButton>
               ))}
@@ -182,19 +267,23 @@ export default function StaffPage() {
 
             <S.TwoColumns>
               <S.Field><S.FieldLabel htmlFor="staff-start-date">여행 시작일</S.FieldLabel><S.Input id="staff-start-date" type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} required /></S.Field>
-              <S.Field><S.FieldLabel htmlFor="staff-end-date">여행 종료일</S.FieldLabel><S.Input id="staff-end-date" type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} required /></S.Field>
+              <S.Field><S.FieldLabel htmlFor="staff-end-date">여행 종료일</S.FieldLabel><S.Input id="staff-end-date" type="date" min={startDate ? nextDate(startDate) : undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} required /></S.Field>
             </S.TwoColumns>
-            <S.Field><S.FieldLabel htmlFor="staff-capacity">최대 인원</S.FieldLabel><S.Input id="staff-capacity" type="number" min="3" max="100" value={capacityInput} onChange={(event) => setCapacityInput(event.target.value)} required /></S.Field>
+            <S.Field><S.FieldLabel htmlFor="staff-capacity">최대 인원 (최소 {minimumCapacity}명)</S.FieldLabel><S.Input id="staff-capacity" type="number" min={minimumCapacity} step={themeId === "honeymoon" ? 2 : 1} value={capacityInput} onChange={(event) => setCapacityInput(event.target.value)} required /></S.Field>
 
-            {selectedTheme && selectedStock ? <S.StockNotice id="stock-notice" $insufficient={stockShortage > 0}>
+            {!selectedTheme ? <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>테마를 선택해 주세요.</strong><small>테마를 선택하면 기념품 재고와 선택 가능한 구성을 확인할 수 있어요.</small></span></S.StockNotice> : inventoryLoading ? (
+              <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>창고 재고를 불러오는 중입니다.</strong><small>서버의 최신 재고를 확인하고 있어요.</small></span></S.StockNotice>
+            ) : selectedStockAmount === undefined ? (
+              <S.StockNotice id="stock-notice" $insufficient><span><strong><FiAlertTriangle aria-hidden="true" />창고 재고를 확인할 수 없습니다.</strong><small>{inventoryError || "잠시 후 다시 시도해 주세요."}</small></span></S.StockNotice>
+            ) : <S.StockNotice id="stock-notice" $insufficient={stockShortage > 0}>
               <span>
                 <strong>{stockShortage > 0 && <FiAlertTriangle aria-hidden="true" />}창고 재고 · {selectedTheme.gift}</strong>
                 <small>{stockShortage > 0
-                  ? `재고가 ${stockShortage}${selectedTheme.unit} 부족해요. 최대 인원을 ${selectedStock.amount}명 이하로 줄이거나 창고 재고 화면에서 입고한 뒤 등록하세요.`
+                  ? `재고가 ${stockShortage}${selectedTheme.unit} 부족해요. 최대 인원을 ${selectedStockAmount}명 이하로 줄이거나 창고 재고 화면에서 입고한 뒤 등록하세요.`
                   : "최대 인원 모두에게 기념품을 줄 수 있어요."}</small>
               </span>
-              <b>{selectedStock.amount}{selectedTheme.unit} 보유 / 최대 인원 {capacity}명 필요</b>
-            </S.StockNotice> : <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>테마를 선택해 주세요.</strong><small>테마를 선택하면 기념품 재고와 선택 가능한 구성을 확인할 수 있어요.</small></span></S.StockNotice>}
+              <b>{selectedStockAmount}{selectedTheme.unit} 보유 / 최대 인원 {capacity}명 필요</b>
+            </S.StockNotice>}
 
             <S.PriceField><S.FieldLabel htmlFor="staff-price">1인 기본가 (원)</S.FieldLabel><small>클래식 등급 기준이며 항공료·가이드 비용 등을 포함한 금액이에요.</small><S.Input id="staff-price" type="number" min="0" step="1000" value={basePriceInput} onChange={(event) => setBasePriceInput(event.target.value)} required /></S.PriceField>
 
@@ -221,7 +310,7 @@ export default function StaffPage() {
             <S.OptionGroup><S.FieldLabel>추가 옵션</S.FieldLabel><S.FixedOptions><span><strong>샴페인</strong><small>+{currency.format(FIXED_DRINK_PRICES.champagne)}원</small></span><span><strong>커피</strong><small>+{currency.format(FIXED_DRINK_PRICES.coffee)}원</small></span></S.FixedOptions></S.OptionGroup>
 
             <S.Warning><strong>주의</strong> 등록한 상품의 일정과 금액은 수정할 수 없어요. 상품 취소 시 예약자에게 취소 안내가 필요하므로 등록 전 다시 한 번 확인해 주세요.</S.Warning>
-            <S.RegisterButton type="submit" disabled={!themeId || stockShortage > 0 || submitting}>{submitting ? "등록 중..." : "상품 등록"}</S.RegisterButton>
+            <S.RegisterButton type="submit" disabled={!themeId || inventoryLoading || selectedStockAmount === undefined || stockShortage > 0 || submitting}>{submitting ? "등록 중..." : "상품 등록"}</S.RegisterButton>
             <S.FormMessage role="status">{message}</S.FormMessage>
           </S.Form>
           ) : (
@@ -241,11 +330,12 @@ export default function StaffPage() {
               {filteredProducts.map((product) => {
                 const priceOpen = expandedProductId === product.id;
                 const pricePanelId = `product-option-prices-${product.id}`;
+                const cancellable = product.status === "RECRUITING" || product.status === "CONFIRMED" || product.status === "CLOSED";
                 return (
-                <S.ProductCard key={product.id} $cancelled={product.status === "판매 취소"}>
-                  <S.ProductHead><S.ProductName><i style={{ background: themeInfo[product.themeId].color }} /><span><strong>{product.title}</strong><small>{product.code}</small></span></S.ProductName><S.Status $confirmed={product.status === "출발 확정"} $cancelled={product.status === "판매 취소"}>{product.status}</S.Status></S.ProductHead>
-                  <S.ProductInfo>{product.start} – {product.end} · {product.duration} · 1인 {currency.format(product.price)}원</S.ProductInfo>
-                  <S.ProductCapacityRow><S.ProductInfo>신청 {product.applicants}명 / 최대 {product.capacity}명</S.ProductInfo><S.CancelProductButton type="button" disabled={product.status === "판매 취소"} onClick={() => setCancelTarget(product)}>{product.status === "판매 취소" ? "취소 완료" : "상품 취소"}</S.CancelProductButton></S.ProductCapacityRow>
+                <S.ProductCard key={product.id} $cancelled={product.status === "CANCELLED"}>
+                  <S.ProductHead><S.ProductName><i style={{ background: themeInfo[product.themeId].color }} /><span><strong>{product.title}</strong><small>{product.code}</small></span></S.ProductName><StaffProductStatus status={product.status} /></S.ProductHead>
+                  <S.ProductInfo>{product.start} – {product.end} · {product.duration} · {product.price === undefined ? "가격 정보 없음" : `1인 최저 구성 ${currency.format(product.price)}원`}</S.ProductInfo>
+                  <S.ProductCapacityRow><S.ProductInfo>신청 {product.applicants}명 / 최대 {product.capacity}명</S.ProductInfo><S.CancelProductButton type="button" disabled={!cancellable} onClick={() => openCancelModal(product)}>{product.status === "CANCELLED" ? "취소 완료" : cancellable ? "상품 취소" : "취소 불가"}</S.CancelProductButton></S.ProductCapacityRow>
                   <S.PriceToggleButton type="button" $open={priceOpen} onClick={() => setExpandedProductId(priceOpen ? null : product.id)} aria-expanded={priceOpen} aria-controls={pricePanelId}>
                     <span>옵션 가격 {priceOpen ? "접기" : "보기"}</span><FiChevronDown aria-hidden="true" />
                   </S.PriceToggleButton>
@@ -253,7 +343,6 @@ export default function StaffPage() {
                     <S.OptionPriceInner>
                       <S.BasePriceGrid>
                         <PriceItem label="기본 서비스" value={product.optionPrices.baseService} />
-                        <PriceItem label="항공" value={product.optionPrices.flight} />
                       </S.BasePriceGrid>
                       <PriceGroup title="호텔" items={[
                         ...(requiresGrandOrHigherTheme(product.themeId) ? [] : [["3성 호텔", product.optionPrices.threeStarHotel] as [string, number | undefined]]),
@@ -283,12 +372,12 @@ export default function StaffPage() {
           )}
         </S.Workspace>
       </S.Main>
-      <Modal open={cancelTarget !== null} title="상품을 취소할까요?" onClose={() => setCancelTarget(null)} tone="warm">
+      <Modal open={cancelModalOpen} title="상품을 취소할까요?" onClose={closeCancelModal} tone="warm">
         {cancelTarget && (
           <>
             <S.CancelProductSummary><strong>{cancelTarget.title}</strong><span>{cancelTarget.start} – {cancelTarget.end} · {cancelTarget.duration}</span><span>신청 {cancelTarget.applicants}명 / 최대 {cancelTarget.capacity}명</span></S.CancelProductSummary>
-            <S.CancelProductWarning><FiAlertTriangle aria-hidden="true" /><span><strong>취소 후에는 다시 판매할 수 없어요.</strong><small>신청자가 있다면 예약 취소와 환불 안내 문자를 별도로 발송해야 합니다.</small></span></S.CancelProductWarning>
-            <S.CancelProductActions><S.KeepProductButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.KeepProductButton><S.ConfirmProductCancelButton type="button" disabled={submitting} onClick={() => void cancelProduct()}>{submitting ? "취소 중..." : "상품 취소하기"}</S.ConfirmProductCancelButton></S.CancelProductActions>
+            <S.CancelProductWarning><FiAlertTriangle aria-hidden="true" /><span><strong>취소 후에는 다시 판매할 수 없어요.</strong></span></S.CancelProductWarning>
+            <S.CancelProductActions><S.KeepProductButton type="button" onClick={closeCancelModal}>돌아가기</S.KeepProductButton><S.ConfirmProductCancelButton type="button" disabled={submitting} onClick={() => void cancelProduct()}>{submitting ? "취소 중..." : "상품 취소하기"}</S.ConfirmProductCancelButton></S.CancelProductActions>
           </>
         )}
       </Modal>
@@ -297,22 +386,41 @@ export default function StaffPage() {
 }
 
 async function loadProducts() {
-  const grouped = await Promise.all((Object.entries(THEME_TO_API) as [ThemeId, ThemeCode][]).map(async ([themeId, code]) => {
-    const products = await getTravelProducts(code);
-    return Promise.all(products.map(async (product) => {
-      const detail = await getTravelProduct(product.travelProductId).catch(() => product);
-      return toProduct({ ...product, ...detail, theme: code }, themeId);
-    }));
+  const products = await getStaffTravelProducts();
+  const detailedProducts = await Promise.all(products.map(async (product) => {
+    const detail = await getTravelProduct(product.travelProductId).catch(() => product);
+    return toProduct({ ...product, ...detail, theme: product.theme }, API_TO_THEME[product.theme]);
   }));
-  return grouped.flat().sort((a, b) => a.start.localeCompare(b.start));
+  return sortProducts(detailedProducts);
+}
+
+function sortProducts(products: Product[]) {
+  return [...products].sort((a, b) =>
+    Number(a.status === "CANCELLED") - Number(b.status === "CANCELLED")
+    || a.start.localeCompare(b.start),
+  );
+}
+
+async function loadInventoryQuantities() {
+  const items = await getInventory();
+  return items.reduce<Partial<Record<InventoryId, number>>>((quantities, item) => {
+    quantities[INVENTORY_API_TO_ID[item.item]] = item.quantity;
+    return quantities;
+  }, {});
 }
 
 function toProduct(product: TravelProduct, fallbackTheme: ThemeId): Product {
   const themeId = product.theme ? API_TO_THEME[product.theme] : fallbackTheme;
   const start = product.departureDate.slice(0, 10);
   const end = product.returnDate.slice(0, 10);
-  const status: Product["status"] = product.status === "CANCELLED" ? "판매 취소" : product.status === "CONFIRMED" ? "출발 확정" : "모집 중";
-  const basicPrice = (product.baseServicePrice ?? 0) + (product.flightPrice ?? 0) + (product.threeStarHotelPrice ?? 0) + (product.lunchPrice ?? 0) + (product.luxuryVanPrice ?? 0);
+  const requiresGrandOrHigher = themeId === "honeymoon" || themeId === "healing";
+  const hotelPrice = requiresGrandOrHigher ? product.fourStarHotelPrice : product.threeStarHotelPrice;
+  const mealPrice = requiresGrandOrHigher ? product.localRestaurantPrice : product.lunchPrice;
+  const transportationPrice = themeId === "honeymoon" ? product.luxuryCarPrice : product.luxuryVanPrice;
+  const priceParts = [product.baseServicePrice, hotelPrice, mealPrice, transportationPrice];
+  const basicPrice = priceParts.every((price): price is number => typeof price === "number")
+    ? priceParts.reduce((total, price) => total + price, 0)
+    : undefined;
   return {
     id: String(product.travelProductId),
     themeId,
@@ -324,10 +432,9 @@ function toProduct(product: TravelProduct, fallbackTheme: ThemeId): Product {
     price: basicPrice,
     applicants: product.currentParticipants,
     capacity: product.capacity,
-    status,
+    status: product.status,
     optionPrices: {
       baseService: product.baseServicePrice,
-      flight: product.flightPrice,
       threeStarHotel: product.threeStarHotelPrice,
       fourStarHotel: product.fourStarHotelPrice,
       fiveStarHotel: product.fiveStarHotelPrice,

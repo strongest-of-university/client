@@ -40,14 +40,13 @@ export function getInventory() {
 export function changeInventory(
   item: InventoryApiItem,
   changeQuantity: number,
-  quantityAfter: number,
   reason: string,
 ) {
   return apiRequest<InventoryResponse>(`/api/v1/inventory/${item}`, {
     method: "PATCH",
     body: JSON.stringify({
-      changeType: changeQuantity > 0 ? "INBOUND" : "ADJUSTMENT",
-      quantity: changeQuantity > 0 ? changeQuantity : quantityAfter,
+      changeType: changeQuantity > 0 ? "INBOUND" : "OUTBOUND",
+      quantity: Math.abs(changeQuantity),
       reason,
     }),
   });

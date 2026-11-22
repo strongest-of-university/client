@@ -11,19 +11,23 @@ type SignupFields = {
   name: string;
   phone: string;
   address: string;
+  staffCode: string;
 };
+
+type SignupRole = "CUSTOMER" | "STAFF";
 
 export default function SignupPage() {
   const [fields, setFields] = useState<SignupFields>({
-    username: "", password: "", passwordConfirmation: "", name: "", phone: "", address: "",
+    username: "", password: "", passwordConfirmation: "", name: "", phone: "", address: "", staffCode: "",
   });
+  const [role, setRole] = useState<SignupRole>("CUSTOMER");
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const passwordsMatch = fields.password.length > 0 && fields.password === fields.passwordConfirmation;
   const phoneValid = /^01[016789]-?\d{3,4}-?\d{4}$/.test(fields.phone.trim());
   const requiredFieldsPresent = [fields.username, fields.name, fields.address].every((value) => value.trim().length > 0);
-  const canSubmit = requiredFieldsPresent && passwordsMatch && phoneValid;
+  const canSubmit = requiredFieldsPresent && passwordsMatch && phoneValid && (role === "CUSTOMER" || fields.staffCode.trim().length > 0);
   const confirmationEntered = fields.passwordConfirmation.length > 0;
   const phoneError = phoneTouched && fields.phone.length > 0 && !phoneValid;
 
@@ -38,13 +42,16 @@ export default function SignupPage() {
     setSubmitting(true);
     setMessage("");
     try {
-      await signup({
+      const commonFields = {
         loginId: fields.username.trim(),
         password: fields.password,
         name: fields.name.trim(),
         phoneNumber: fields.phone.trim(),
         address: fields.address.trim(),
-      });
+      };
+      await signup(role === "STAFF"
+        ? { ...commonFields, role, staffCode: fields.staffCode.trim() }
+        : { ...commonFields, role });
       window.location.assign("/login?signup=success");
     } catch (error) {
       setMessage(getErrorMessage(error));
@@ -58,6 +65,13 @@ export default function SignupPage() {
       <S.Main>
         <S.Title>회원가입</S.Title>
         <S.Form onSubmit={handleSubmit}>
+          <S.Field>
+            <S.Label>가입 유형</S.Label>
+            <S.RoleSelector aria-label="가입 유형">
+              <S.RoleButton type="button" $selected={role === "CUSTOMER"} onClick={() => { setRole("CUSTOMER"); setMessage(""); }}>일반 회원</S.RoleButton>
+              <S.RoleButton type="button" $selected={role === "STAFF"} onClick={() => { setRole("STAFF"); setMessage(""); }}>직원</S.RoleButton>
+            </S.RoleSelector>
+          </S.Field>
           <S.Field>
             <S.Label htmlFor="signup-username">아이디</S.Label>
             <S.Input id="signup-username" name="username" autoComplete="username" placeholder="아이디" value={fields.username} onChange={(event) => updateField("username", event.target.value)} required />
@@ -100,8 +114,14 @@ export default function SignupPage() {
             <S.Label htmlFor="signup-address">주소</S.Label>
             <S.Input id="signup-address" name="address" autoComplete="street-address" placeholder="서울시 강남구 ..." value={fields.address} onChange={(event) => updateField("address", event.target.value)} required />
           </S.Field>
+          {role === "STAFF" && (
+            <S.Field>
+              <S.Label htmlFor="signup-staff-code">직원 가입 키코드</S.Label>
+              <S.Input id="signup-staff-code" name="staffCode" type="password" autoComplete="off" placeholder="직원 가입 키코드" value={fields.staffCode} onChange={(event) => updateField("staffCode", event.target.value)} required />
+            </S.Field>
+          )}
           <S.HelpText>주소와 연락처는 예약 및 출발 확정 안내에 사용됩니다.</S.HelpText>
-          <S.SubmitButton type="submit" disabled={!canSubmit || submitting}>{submitting ? "가입 중..." : "가입하고 시작하기"}</S.SubmitButton>
+          <S.SubmitButton type="submit" disabled={!canSubmit || submitting}>{submitting ? "가입 중..." : role === "STAFF" ? "직원으로 가입하기" : "가입하고 시작하기"}</S.SubmitButton>
         </S.Form>
         <S.Message role="status" aria-live="polite">{message}</S.Message>
       </S.Main>

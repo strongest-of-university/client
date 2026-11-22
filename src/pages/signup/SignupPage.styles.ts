@@ -71,6 +71,22 @@ export const Input = styled.input`
   &[aria-invalid="true"] { border-color: #b43d16; }
 `;
 
+export const RoleSelector = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+`;
+
+export const RoleButton = styled.button<{ $selected: boolean }>`
+  min-height: 48px;
+  border: 1px solid ${({ $selected }) => ($selected ? "var(--color-text)" : "#dfd4c4")};
+  border-radius: 11px;
+  background: ${({ $selected }) => ($selected ? "var(--color-text)" : "#fffdf9")};
+  color: ${({ $selected }) => ($selected ? "var(--color-background)" : "var(--color-text)")};
+  font-size: 14px;
+  font-weight: 700;
+`;
+
 export const Feedback = styled.p<{ $valid: boolean }>`
   margin: 0;
   color: ${({ $valid }) => ($valid ? "#2d583b" : "#b43d16")};

@@ -40,7 +40,7 @@ const productThemeLabels = {
 } as const;
 const productStatusLabels: Record<TravelProduct["status"], string> = {
   RECRUITING: "모집 중", CONFIRMED: "출발 확정", CLOSED: "모집 마감",
-  IN_PROGRESS: "여행 중", COMPLETED: "여행 완료", CANCELLED: "판매 취소",
+  IN_PROGRESS: "여행 진행 중", COMPLETED: "여행 완료", CANCELLED: "판매 중지",
 };
 
 const initialMessage: Message = { role: "assistant", text: "안녕하세요! 어떤 여행을 원하시나요? 테마, 출발일, 인원 등을 말씀하거나 입력해 주세요." };

@@ -9,6 +9,7 @@ import * as S from "./MyPage.styles";
 
 type Reservation = {
   bookingId: number;
+  year: string;
   date: string;
   status: string;
   reservationNumber: string;
@@ -22,12 +23,13 @@ type Reservation = {
     hotel: string;
     transport: string;
     meal: string;
+    drink: string;
     gift: string;
     payment: string;
   };
   cancelState?: "available" | "unavailable";
-  cancellationFee?: number;
-  refundAmount?: number;
+  paymentAmount?: number;
+  cancelled: boolean;
 };
 
 export default function MyPage() {
@@ -44,15 +46,19 @@ export default function MyPage() {
   const [profileMessage, setProfileMessage] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<"history" | "profile">("history");
-  const cancelAmount = cancelTarget ? Number(cancelTarget.details.payment.replace(/\D/g, "")) : 0;
-  const cancellationFee = cancelTarget?.cancellationFee ?? Math.round(cancelAmount * 0.1);
-  const refundAmount = cancelTarget?.refundAmount ?? cancelAmount - cancellationFee;
+  const cancelAmount = cancelTarget?.paymentAmount;
+  const cancellationFee = cancelAmount === undefined ? undefined : Math.round(cancelAmount * 0.1);
+  const refundAmount = cancelAmount === undefined || cancellationFee === undefined ? undefined : cancelAmount - cancellationFee;
+  const reservationGroups = groupReservationsByYear(reservations);
 
   useEffect(() => {
     let active = true;
     getMyBookings()
-      .then((bookings) => {
-        if (active) setReservations(bookings.map(toReservation));
+      .then(async (bookings) => {
+        const detailedBookings = await Promise.all(
+          bookings.map((booking) => getBooking(booking.bookingId).catch(() => booking)),
+        );
+        if (active) setReservations(detailedBookings.map(toReservation));
       })
       .catch((error) => {
         if (active) setMessage(getErrorMessage(error));
@@ -106,7 +112,7 @@ export default function MyPage() {
   }
 
   async function confirmCancellation() {
-    if (!cancelTarget) return;
+    if (!cancelTarget || cancelTarget.cancelState !== "available") return;
     setCancelling(true);
     try {
       const cancelled = await cancelBooking(cancelTarget.bookingId);
@@ -123,18 +129,8 @@ export default function MyPage() {
     }
   }
 
-  async function toggleDetails(reservation: Reservation) {
-    if (expandedReservation === reservation.reservationNumber) {
-      setExpandedReservation(null);
-      return;
-    }
-    setExpandedReservation(reservation.reservationNumber);
-    try {
-      const detail = await getBooking(reservation.bookingId);
-      setReservations((current) => current.map((item) => item.bookingId === reservation.bookingId ? toReservation(detail) : item));
-    } catch (error) {
-      setMessage(getErrorMessage(error));
-    }
+  function toggleDetails(reservation: Reservation) {
+    setExpandedReservation((current) => current === reservation.reservationNumber ? null : reservation.reservationNumber);
   }
 
   return (
@@ -180,14 +176,16 @@ export default function MyPage() {
         )}
 
         {activeSection === "history" && <>
-        <S.Year>{new Date().getFullYear()}년</S.Year>
         {loading && <S.LiveMessage role="status">예약 내역을 불러오는 중입니다.</S.LiveMessage>}
         {!loading && reservations.length === 0 && !message && <S.LiveMessage role="status">예약 내역이 없습니다.</S.LiveMessage>}
+        {reservationGroups.map(([year, yearReservations]) => (
+        <section key={year}>
+        <S.Year>{year === "일정 미정" ? year : `${year}년`}</S.Year>
         <S.Timeline>
-          {reservations.map((reservation) => {
+          {yearReservations.map((reservation) => {
             const detailOpen = expandedReservation === reservation.reservationNumber;
             const detailId = `reservation-detail-${reservation.reservationNumber}`;
-            const cancelled = cancelledReservations.includes(reservation.reservationNumber);
+            const cancelled = reservation.cancelled || cancelledReservations.includes(reservation.reservationNumber);
 
             return (
             <S.TimelineItem key={reservation.reservationNumber}>
@@ -221,6 +219,7 @@ export default function MyPage() {
                       <div><dt>호텔</dt><dd>{reservation.details.hotel}</dd></div>
                       <div><dt>교통</dt><dd>{reservation.details.transport}</dd></div>
                       <div><dt>식사</dt><dd>{reservation.details.meal}</dd></div>
+                      <div><dt>추가 음료</dt><dd>{reservation.details.drink}</dd></div>
                       <div><dt>기념품</dt><dd>{reservation.details.gift}</dd></div>
                       <div><dt>결제 금액</dt><dd>{reservation.details.payment}</dd></div>
                     </S.DetailList>
@@ -244,10 +243,10 @@ export default function MyPage() {
                 {reservation.cancelState === "unavailable" && (
                   <>
                     <S.CancelButton type="button" disabled>
-                      출발 확정 · 취소 불가
+                      예약 취소 불가
                     </S.CancelButton>
                     <S.Note>
-                      출발이 확정된 상품은 예약을 취소할 수 없어요.
+                      출발 7일 전까지만 예약을 취소할 수 있어요.
                     </S.Note>
                   </>
                 )}
@@ -256,6 +255,8 @@ export default function MyPage() {
             );
           })}
         </S.Timeline>
+        </section>
+        ))}
         <S.LiveMessage role="status" aria-live="polite">
           {message}
         </S.LiveMessage>
@@ -300,11 +301,11 @@ export default function MyPage() {
               {cancelTarget.title} · {cancelTarget.details.period} · {cancelTarget.details.grade} · {cancelTarget.details.people} · {cancelTarget.details.payment}
             </S.CancelSummary>
             <S.RefundBox>
-              <div><span>결제 금액</span><strong>{cancelAmount.toLocaleString("ko-KR")}원</strong></div>
-              <div><span>위약금 (확정 전 10%)</span><strong className="fee">−{cancellationFee.toLocaleString("ko-KR")}원</strong></div>
-              <div className="refund"><span>환불 예정</span><strong>{refundAmount.toLocaleString("ko-KR")}원</strong></div>
+              <div><span>결제 금액</span><strong>{formatPaymentAmount(cancelAmount)}</strong></div>
+              <div><span>취소 수수료 (10%)</span><strong className="fee">{cancellationFee === undefined ? "정보 없음" : `−${cancellationFee.toLocaleString("ko-KR")}원`}</strong></div>
+              <div className="refund"><span>환불 예정</span><strong>{formatPaymentAmount(refundAmount)}</strong></div>
             </S.RefundBox>
-            <S.CancellationRule>위약금 기준(예시): 출발 확정 전 10%, 출발 확정 후 30%</S.CancellationRule>
+            <S.CancellationRule>출발 7일 전까지 취소할 수 있으며, 결제 금액의 10%를 제외한 금액이 환불됩니다.</S.CancellationRule>
             <S.CancelActions>
               <S.BackButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.BackButton>
               <S.ConfirmCancelButton type="button" onClick={() => void confirmCancellation()} disabled={cancelling}>{cancelling ? "취소 중..." : "취소하기"}</S.ConfirmCancelButton>
@@ -319,12 +320,14 @@ export default function MyPage() {
 const STATUS_LABEL: Record<string, string> = {
   PENDING_CONFIRMATION: "모집 중",
   CONFIRMED: "출발 확정",
+  IN_PROGRESS: "여행 진행 중",
   CANCELLED: "예약 취소",
   COMPLETED: "여행 완료",
 };
 
 const LEVEL_LABEL: Record<string, string> = { CLASSIC: "클래식", GRAND: "그랜드", PREMIUM: "프리미엄" };
-const MEAL_LABEL: Record<number, string> = { 1: "도시락", 2: "현지식 레스토랑", 3: "스테이크 & 샴페인" };
+const MEAL_LABEL: Record<number, string> = { 1: "도시락", 2: "현지식 레스토랑", 3: "스테이크" };
+const DRINK_LABEL: Record<number, string> = { 0: "없음", 1: "샴페인", 2: "커피", 3: "샴페인과 커피" };
 const TRANSPORT_LABEL: Record<number, string> = { 1: "2인 고급차량", 2: "10인 승합 고급차량" };
 const GIFT_LABEL: Record<string, string> = { HONEYMOON: "커플 기념티", HEALING: "건강 인삼", GOLF: "골프공", TREKKING: "아웃도어 스카프" };
 
@@ -350,23 +353,28 @@ const GIFT_THEME_TITLE: Record<string, string> = { HONEYMOON: "허니문 낭만 
 function toReservation(booking: BookingDto): Reservation {
   const title = productName(booking);
   const people = booking.numberOfPeople ?? 0;
-  const price = booking.totalPrice ?? 0;
+  const price = booking.totalPrice;
+  const payment = formatPaymentAmount(price);
   const grade = LEVEL_LABEL[booking.tourLevel ?? ""] ?? booking.tourLevel ?? "등급 미정";
   const hotel = booking.selectedHotel ? `${booking.selectedHotel}성급 호텔` : "호텔 미정";
   const transport = TRANSPORT_LABEL[booking.selectedTransportation ?? 0] ?? "교통 미정";
   const meal = MEAL_LABEL[booking.selectedMeal ?? 0] ?? "식사 미정";
+  const drink = DRINK_LABEL[booking.selectedDrink ?? 0] ?? "음료 미정";
+  const optionDrink = (booking.selectedDrink ?? 0) > 0 ? ` / ${drink}` : "";
   const theme = booking.theme ?? (typeof booking.travelProduct === "object" ? booking.travelProduct?.theme : undefined) ?? "";
   const status = STATUS_LABEL[booking.bookingStatus] ?? booking.bookingStatus;
   const cancelled = booking.bookingStatus === "CANCELLED";
-  const unavailable = booking.cancellable === false || booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "IN_PROGRESS" || booking.bookingStatus === "COMPLETED";
+  const statusAllowsCancellation = booking.bookingStatus !== "IN_PROGRESS" && booking.bookingStatus !== "COMPLETED";
+  const cancellable = statusAllowsCancellation && isAtLeastSevenDaysBefore(booking.departureDate);
   return {
     bookingId: booking.bookingId,
+    year: booking.departureDate?.slice(0, 4) || "일정 미정",
     date: formatDate(booking.departureDate),
     status,
     reservationNumber: `MW-${String(booking.bookingId).padStart(6, "0")}`,
     title,
-    summary: `${formatDate(booking.departureDate)} – ${formatDate(booking.returnDate)} · ${people}명 · ${price.toLocaleString("ko-KR")}원`,
-    option: `${grade} / ${hotel} / ${meal}`,
+    summary: `${formatDate(booking.departureDate)} – ${formatDate(booking.returnDate)} · ${people}명 · ${payment}`,
+    option: `${grade} / ${hotel} / ${meal}${optionDrink}`,
     details: {
       period: `${formatDate(booking.departureDate, true)} – ${formatDate(booking.returnDate, true)}`,
       people: `${people}명`,
@@ -374,11 +382,40 @@ function toReservation(booking: BookingDto): Reservation {
       hotel,
       transport,
       meal,
+      drink,
       gift: GIFT_LABEL[theme] ?? "기념품 미정",
-      payment: `${price.toLocaleString("ko-KR")}원`,
+      payment,
     },
-    cancelState: cancelled ? undefined : unavailable ? "unavailable" : "available",
-    cancellationFee: booking.cancellationFee,
-    refundAmount: booking.refundAmount,
+    cancelState: cancelled ? undefined : cancellable ? "available" : "unavailable",
+    paymentAmount: price,
+    cancelled,
   };
+}
+
+function isAtLeastSevenDaysBefore(departureDate?: string) {
+  const date = departureDate?.slice(0, 10).split("-").map(Number);
+  if (!date || date.length !== 3 || date.some((value) => !Number.isFinite(value))) return false;
+
+  const now = new Date();
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const departure = Date.UTC(date[0], date[1] - 1, date[2]);
+  return departure - today >= 7 * 24 * 60 * 60 * 1000;
+}
+
+function groupReservationsByYear(reservations: Reservation[]) {
+  const groups = new Map<string, Reservation[]>();
+  reservations.forEach((reservation) => {
+    const items = groups.get(reservation.year) ?? [];
+    items.push(reservation);
+    groups.set(reservation.year, items);
+  });
+  return [...groups.entries()].sort(([yearA], [yearB]) => {
+    if (yearA === "일정 미정") return 1;
+    if (yearB === "일정 미정") return -1;
+    return yearB.localeCompare(yearA);
+  });
+}
+
+function formatPaymentAmount(value?: number) {
+  return value === undefined ? "결제 금액 정보 없음" : `${value.toLocaleString("ko-KR")}원`;
 }

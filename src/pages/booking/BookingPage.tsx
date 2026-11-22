@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
 import { createBooking, previewBooking, type BookingPreview, type BookingSelection } from "../../services/bookingService";
-import { getTravelProduct, getTravelProducts, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
+import { getTravelProduct, getTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
 import { useBookingDraft } from "../../contexts/booking/bookingDraftContext";
@@ -36,10 +36,7 @@ const themes: Theme[] = [
     color: "#873040",
     Icon: FiHeart,
     transport: "2인 전용 고급차량",
-    schedules: [
-      { id: "honeymoon-1", dates: "2026.11.07 – 11.12", duration: "5박 6일" },
-      { id: "honeymoon-2", dates: "2026.12.19 – 12.23", duration: "4박 5일" },
-    ],
+    schedules: [],
     grades: [
       { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", unavailable: true },
       { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
@@ -53,10 +50,7 @@ const themes: Theme[] = [
     color: "#806826",
     Icon: FiFeather,
     transport: "10인 승합 고급차량",
-    schedules: [
-      { id: "healing-1", dates: "2026.12.05 – 12.09", duration: "4박 5일" },
-      { id: "healing-2", dates: "2027.01.09 – 01.12", duration: "3박 4일" },
-    ],
+    schedules: [],
     grades: [
       { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락", unavailable: true },
       { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
@@ -70,10 +64,7 @@ const themes: Theme[] = [
     color: "#315d3e",
     Icon: FiFlag,
     transport: "10인 승합 고급차량",
-    schedules: [
-      { id: "golf-1", dates: "2026.11.21 – 11.24", duration: "3박 4일" },
-      { id: "golf-2", dates: "2026.12.12 – 12.16", duration: "4박 5일" },
-    ],
+    schedules: [],
     grades: [
       { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락" },
       { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
@@ -87,10 +78,7 @@ const themes: Theme[] = [
     color: "#365168",
     Icon: FiMap,
     transport: "10인 승합 고급차량",
-    schedules: [
-      { id: "trekking-1", dates: "2026.11.14 – 11.18", duration: "4박 5일" },
-      { id: "trekking-2", dates: "2026.11.28 – 12.01", duration: "3박 4일" },
-    ],
+    schedules: [],
     grades: [
       { id: "classic", name: "클래식", hotel: "3성급 호텔", meal: "도시락" },
       { id: "grand", name: "그랜드", hotel: "4성급 호텔", meal: "현지식 레스토랑" },
@@ -105,7 +93,7 @@ const steps = [
   ["인원 선택", "함께 가는 인원"],
   ["등급 선택", "호텔과 식사 기준"],
   ["옵션 변경", "원하는 구성으로"],
-  ["신청", "3명부터 출발 확정"],
+  ["신청", "상품별 기준 충족 시 확정"],
 ];
 
 const agreementDetails = [
@@ -123,7 +111,7 @@ const agreementDetails = [
     sections: [
       ["예약 신청", "고객은 여행 테마, 출발 일정, 인원과 여행 구성을 확인하고 결제하여 예약을 신청합니다. 예약 내역은 마이페이지에서 확인할 수 있습니다."],
       ["여행 일정과 구성", "여행 일정 및 호텔, 교통, 식사 등은 고객이 예약 화면에서 선택한 상품과 옵션을 따릅니다. 예약 전 일정과 최종 금액을 확인해 주세요."],
-      ["출발 확정", "상품별 신청 인원이 출발 기준을 충족하면 출발이 확정됩니다. 현재 서비스의 안내 기준은 3명 이상입니다."],
+      ["출발 확정", "상품별 신청 인원이 해당 상품의 출발 기준을 충족하면 출발이 확정됩니다."],
     ],
   },
   {
@@ -137,6 +125,7 @@ const agreementDetails = [
 ] as const;
 
 const currency = new Intl.NumberFormat("ko-KR");
+const FIXED_DRINK_PRICES = { champagne: 70_000, coffee: 15_000 } as const;
 const hotelChoices = [
   { value: "3성급 호텔" },
   { value: "4성급 호텔" },
@@ -169,14 +158,14 @@ const PRODUCT_STATUS_LABEL: Record<TravelProduct["status"], string> = {
   CLOSED: "마감",
   IN_PROGRESS: "여행 중",
   COMPLETED: "여행 완료",
-  CANCELLED: "판매 취소",
+  CANCELLED: "판매 중지",
 };
 
 export default function BookingPage() {
   const { consumeBookingDraft } = useBookingDraft();
   const [themeId, setThemeId] = useState("");
   const [scheduleId, setScheduleId] = useState("");
-  const [people, setPeople] = useState(2);
+  const [people, setPeople] = useState(1);
   const [gradeId, setGradeId] = useState("");
   const [hotelOption, setHotelOption] = useState("");
   const [transportOption, setTransportOption] = useState("");
@@ -185,6 +174,7 @@ export default function BookingPage() {
   const [agreements, setAgreements] = useState([false, false, false]);
   const [openAgreement, setOpenAgreement] = useState<number | null>(null);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [previewMessage, setPreviewMessage] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -196,8 +186,9 @@ export default function BookingPage() {
   const [installment, setInstallment] = useState("일시불");
   const [installmentOpen, setInstallmentOpen] = useState(false);
   const [productsByTheme, setProductsByTheme] = useState<Partial<Record<ThemeCode, TravelProduct[]>>>({});
+  const [failedThemeCodes, setFailedThemeCodes] = useState<Set<ThemeCode>>(() => new Set());
+  const [productsLoading, setProductsLoading] = useState(true);
   const [previewState, setPreviewState] = useState<{ key: string; data: BookingPreview } | null>(null);
-  const [drinkPriceState, setDrinkPriceState] = useState<{ key: string; champagne: number; coffee: number } | null>(null);
 
   const availableThemes = useMemo(() => themes.map((item) => {
     const products = productsByTheme[THEME_CODES[item.id]];
@@ -205,7 +196,7 @@ export default function BookingPage() {
     return {
       ...item,
       schedules: products
-        .filter((product) => product.status !== "CANCELLED" && product.status !== "COMPLETED")
+        .filter((product) => product.status === "RECRUITING" || product.status === "CONFIRMED")
         .map(productToSchedule),
     };
   }), [productsByTheme]);
@@ -216,7 +207,8 @@ export default function BookingPage() {
   const selectedProduct = theme ? productsByTheme[THEME_CODES[theme.id]]?.find((product) => product.travelProductId === schedule?.travelProductId) : undefined;
   const allAgreed = agreements.every(Boolean);
   const isHoneymoon = theme?.id === "honeymoon";
-  const rawMaxPeople = typeof schedule?.remainingCapacity === "number" ? Math.min(10, Math.max(0, schedule.remainingCapacity)) : 0;
+  const departureMinimumPeople = theme ? minimumApplicantsForTheme(THEME_CODES[theme.id]) : 0;
+  const rawMaxPeople = typeof schedule?.remainingCapacity === "number" ? Math.max(0, schedule.remainingCapacity) : 0;
   const maxPeople = isHoneymoon ? Math.floor(rawMaxPeople / 2) * 2 : rawMaxPeople;
   const minimumPeople = isHoneymoon ? 2 : 1;
   const peopleStep = isHoneymoon ? 2 : 1;
@@ -226,13 +218,6 @@ export default function BookingPage() {
   const selectedTransport = transportOption || theme?.transport;
   const selectedMeal = mealOption || grade?.meal;
   const requiresGrandOrHigher = theme?.id === "honeymoon" || theme?.id === "healing";
-  const defaultDrinkOptions = grade?.drink ? [grade.drink] : [];
-  const changedDrinkOptions = new Set([...defaultDrinkOptions, ...drinkOptions]);
-  const changedOptions = [
-    hotelOption && hotelOption !== grade?.hotel,
-    transportOption && transportOption !== theme?.transport,
-    mealOption && mealOption !== grade?.meal,
-  ].filter(Boolean).length + [...changedDrinkOptions].filter((option) => defaultDrinkOptions.includes(option) !== drinkOptions.includes(option)).length;
   const formattedCardNumber = cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ");
   const paymentReady = cardNumber.length === 16
     && /^\d{2} \/ \d{2}$/.test(expiry)
@@ -252,7 +237,6 @@ export default function BookingPage() {
     };
   })();
   const selectionKey = bookingSelection ? JSON.stringify(bookingSelection) : "";
-  const drinkPriceKey = bookingSelection ? JSON.stringify({ ...bookingSelection, numberOfPeople: 1, selectedDrink: 0 }) : "";
   const bookingPreview = previewState?.key === selectionKey ? previewState.data : null;
   const displayedOriginalPrice = bookingPreview?.originalPrice;
   const discount = bookingPreview?.discountAmount;
@@ -260,15 +244,25 @@ export default function BookingPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all((Object.values(THEME_CODES) as ThemeCode[]).map(async (code) => {
+    const themeCodes = Object.values(THEME_CODES) as ThemeCode[];
+    Promise.allSettled(themeCodes.map(async (code) => {
       const products = await getTravelProducts(code);
       const details = await Promise.all(products.map((product) => getTravelProduct(product.travelProductId).catch(() => product)));
       return [code, details.map((detail, index) => ({ ...products[index], ...detail, theme: code }))] as const;
     }))
-      .then((entries) => {
+      .then((results) => {
         if (!active) return;
-        const next = Object.fromEntries(entries) as Record<ThemeCode, TravelProduct[]>;
+        const entries = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+        const failed = new Set(results.flatMap((result, index) => result.status === "rejected" ? [themeCodes[index]] : []));
+        const next = Object.fromEntries(entries) as Partial<Record<ThemeCode, TravelProduct[]>>;
         setProductsByTheme(next);
+        setFailedThemeCodes(failed);
+        setProductsLoading(false);
+        if (entries.length === 0) {
+          const firstError = results.find((result) => result.status === "rejected");
+          setSubmitMessage(`상품 일정을 불러오지 못했습니다.${firstError?.status === "rejected" ? ` ${getErrorMessage(firstError.reason)}` : ""}`);
+          return;
+        }
         const savedBookingDraft = consumeBookingDraft();
         const savedId = savedBookingDraft.travelProductId;
         if (savedId) {
@@ -278,8 +272,8 @@ export default function BookingPage() {
             setThemeId(selectedThemeId);
             setScheduleId(String(savedId));
             const selectedProduct = matched[1].find((product) => product.travelProductId === savedId);
-            const capacity = Math.max(0, Math.min(10, selectedProduct?.remainingCapacity ?? 0));
-            if (capacity > 0) setPeople((current) => clampPeople(current, capacity, selectedThemeId === "honeymoon"));
+            const capacity = Math.max(0, selectedProduct?.remainingCapacity ?? 0);
+            if (capacity > 0) setPeople(clampPeople(selectedThemeId === "honeymoon" ? 2 : 1, capacity, selectedThemeId === "honeymoon"));
             const savedDraft = savedBookingDraft.voiceDraft;
             if (savedDraft) {
               try {
@@ -304,7 +298,10 @@ export default function BookingPage() {
         }
       })
       .catch((error) => {
-        if (active) setSubmitMessage(`상품 일정을 불러오지 못했습니다. ${getErrorMessage(error)}`);
+        if (active) {
+          setProductsLoading(false);
+          setSubmitMessage(`상품 일정을 불러오지 못했습니다. ${getErrorMessage(error)}`);
+        }
       });
     return () => { active = false; };
   }, [consumeBookingDraft]);
@@ -316,10 +313,13 @@ export default function BookingPage() {
     const timer = window.setTimeout(() => {
       previewBooking(selection)
         .then((preview) => {
-          if (active) setPreviewState({ key: selectionKey, data: preview });
+          if (active) {
+            setPreviewState({ key: selectionKey, data: preview });
+            setPreviewMessage("");
+          }
         })
         .catch((error) => {
-          if (active) setSubmitMessage(getErrorMessage(error));
+          if (active) setPreviewMessage(getErrorMessage(error));
         });
     }, 250);
     return () => {
@@ -327,23 +327,6 @@ export default function BookingPage() {
       window.clearTimeout(timer);
     };
   }, [selectionKey]);
-
-  useEffect(() => {
-    if (!drinkPriceKey) return;
-    let active = true;
-    const baseSelection = JSON.parse(drinkPriceKey) as BookingSelection;
-    Promise.all([
-      previewBooking({ ...baseSelection, selectedDrink: 1 }),
-      previewBooking({ ...baseSelection, selectedDrink: 2 }),
-    ])
-      .then(([champagne, coffee]) => {
-        if (active) setDrinkPriceState({ key: drinkPriceKey, champagne: champagne.drinkPrice, coffee: coffee.drinkPrice });
-      })
-      .catch(() => {
-        if (active) setDrinkPriceState(null);
-      });
-    return () => { active = false; };
-  }, [drinkPriceKey]);
 
   const currentStep = (() => {
     if (!theme) return 1;
@@ -356,13 +339,14 @@ export default function BookingPage() {
   function selectTheme(nextTheme: Theme) {
     setThemeId(nextTheme.id);
     setScheduleId("");
-    setPeople(2);
+    setPeople(nextTheme.id === "honeymoon" ? 2 : 1);
     setGradeId("");
     setHotelOption("");
     setTransportOption("");
     setMealOption("");
     setDrinkOptions([]);
     setSubmitMessage("");
+    setPreviewMessage("");
   }
 
   function selectGrade(nextGradeId: Grade["id"]) {
@@ -372,6 +356,7 @@ export default function BookingPage() {
     setMealOption(nextGrade?.meal ?? "");
     setDrinkOptions(nextGrade?.drink ? [nextGrade.drink] : []);
     setSubmitMessage("");
+    setPreviewMessage("");
   }
 
   function toggleDrink(option: string) {
@@ -469,8 +454,12 @@ export default function BookingPage() {
 
           <S.Section>
             <S.SectionTitle>2. 출발 일정을 고르세요</S.SectionTitle>
-            <S.SectionDescription>미스터 월드가 기획한 여행 일정이에요. 3명 이상 모이면 출발이 확정됩니다.</S.SectionDescription>
-            {theme ? (
+            <S.SectionDescription>{theme ? `미스터 월드가 기획한 여행 일정이에요. ${departureMinimumPeople}명 이상 모이면 출발이 확정됩니다.` : "테마를 선택하면 상품별 출발 기준을 확인할 수 있어요."}</S.SectionDescription>
+            {!theme ? <S.EmptyState>테마를 먼저 고르면 출발 일정이 나와요.</S.EmptyState> : productsLoading ? (
+              <S.EmptyState>상품 일정을 불러오는 중입니다.</S.EmptyState>
+            ) : failedThemeCodes.has(THEME_CODES[theme.id]) ? (
+              <S.EmptyState>이 테마의 상품 일정을 불러오지 못했습니다.</S.EmptyState>
+            ) : theme.schedules.length > 0 ? (
               <S.ChoiceGrid>
                 {theme.schedules.map((item) => (
                   <S.ChoiceCard
@@ -480,7 +469,7 @@ export default function BookingPage() {
                     disabled={!item.travelProductId || !Number.isFinite(item.remainingCapacity) || (item.remainingCapacity ?? 0) <= 0 || (item.status !== "RECRUITING" && item.status !== "CONFIRMED")}
                     onClick={() => {
                       setScheduleId(item.id);
-                      setPeople((current) => clampPeople(current, Math.min(10, item.remainingCapacity ?? 0), theme.id === "honeymoon"));
+                      setPeople((current) => clampPeople(current, item.remainingCapacity ?? 0, theme.id === "honeymoon"));
                     }}
                     aria-pressed={scheduleId === item.id}
                   >
@@ -489,12 +478,12 @@ export default function BookingPage() {
                   </S.ChoiceCard>
                 ))}
               </S.ChoiceGrid>
-            ) : <S.EmptyState>테마를 먼저 고르면 출발 일정이 나와요.</S.EmptyState>}
+            ) : <S.EmptyState>현재 예약 가능한 일정이 없습니다.</S.EmptyState>}
           </S.Section>
 
           <S.Section>
             <S.SectionTitle>3. 몇 분이 함께하세요?</S.SectionTitle>
-            <S.SectionDescription>선택한 일정의 현재 신청 인원과 합쳐 3명 이상이면 출발이 확정됩니다.</S.SectionDescription>
+            <S.SectionDescription>{theme ? `선택한 일정의 현재 신청 인원과 합쳐 ${departureMinimumPeople}명 이상이면 출발이 확정됩니다.` : "테마와 일정을 선택하면 출발 기준을 확인할 수 있어요."}</S.SectionDescription>
             <S.PeopleRow>
               <strong>신청 인원</strong>
               <S.Counter>
@@ -576,8 +565,7 @@ export default function BookingPage() {
                   <S.OptionChoices>
                     {drinkChoices.map((choice) => {
                       const selected = drinkOptions.includes(choice.value);
-                      const apiPrices = drinkPriceState?.key === drinkPriceKey ? drinkPriceState : null;
-                      const price = choice.value === "샴페인" ? apiPrices?.champagne : apiPrices?.coffee;
+                      const price = choice.value === "샴페인" ? FIXED_DRINK_PRICES.champagne : FIXED_DRINK_PRICES.coffee;
                       return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => toggleDrink(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatApiOptionPrice(price)}{choice.value === grade.drink ? " · 등급 기본" : ""}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
@@ -588,7 +576,7 @@ export default function BookingPage() {
 
           <S.Section>
             <S.SectionTitle>6. 신청 정보를 확인하세요</S.SectionTitle>
-            <S.SectionDescription>일정은 상품별로 확정되어 있으며, 3명 이상 신청 시 출발이 확정됩니다.</S.SectionDescription>
+            <S.SectionDescription>{theme ? `일정은 상품별로 확정되어 있으며, ${departureMinimumPeople}명 이상 신청 시 출발이 확정됩니다.` : "상품별 출발 기준을 확인한 뒤 신청해 주세요."}</S.SectionDescription>
             <S.AllAgreement>
               <input id="agree-all" type="checkbox" checked={allAgreed} onChange={toggleAllAgreements} />
               <label htmlFor="agree-all">전체 약관 동의</label>
@@ -615,7 +603,6 @@ export default function BookingPage() {
             <div><dt>교통</dt><dd>{selectedTransport ?? "–"}</dd></div>
             <div><dt>식사</dt><dd>{selectedMeal ?? "–"}</dd></div>
             <div><dt>추가 음료</dt><dd>{drinkOptions.length ? drinkOptions.join(" · ") : "없음"}</dd></div>
-            <div><dt>추가 옵션</dt><dd>{changedOptions ? `${changedOptions}개` : "없음"}</dd></div>
             <div><dt>신청 인원</dt><dd>{people}명</dd></div>
           </S.SummaryList>
           <S.PriceList>
@@ -625,7 +612,7 @@ export default function BookingPage() {
           </S.PriceList>
           <S.SubmitButton type="submit" disabled={!isComplete}>결제하기</S.SubmitButton>
           <S.SummaryHint>{theme ? "모든 필수 항목과 약관을 확인해 주세요" : "1번에서 테마를 골라 주세요"}</S.SummaryHint>
-          <S.SubmitMessage role="status" aria-live="polite">{submitMessage}</S.SubmitMessage>
+          <S.SubmitMessage role="status" aria-live="polite">{submitMessage || previewMessage}</S.SubmitMessage>
         </S.Summary>
       </S.BookingForm>
 
@@ -762,7 +749,7 @@ function formatApiOptionPrice(value?: number) {
 }
 
 function clampPeople(value: number, capacity: number, evenOnly: boolean) {
-  const boundedCapacity = Math.min(10, Math.max(0, capacity));
+  const boundedCapacity = Math.max(0, capacity);
 
   if (!evenOnly) {
     return boundedCapacity > 0

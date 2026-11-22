@@ -92,3 +92,30 @@ export const MessageContent = styled.div`
     word-break: keep-all;
   }
 `;
+
+export const Pagination = styled.nav`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+
+  span { font-size: 12px; font-weight: 700; }
+
+  button {
+    min-width: 58px;
+    padding: 8px 12px;
+    border: 1px solid #cfc7bd;
+    border-radius: 7px;
+    color: var(--color-text);
+    background: var(--color-surface);
+    font-size: 12px;
+    font-weight: 700;
+
+    &:disabled {
+      color: #aaa39b;
+      background: #f3f1ee;
+      cursor: not-allowed;
+    }
+  }
+`;

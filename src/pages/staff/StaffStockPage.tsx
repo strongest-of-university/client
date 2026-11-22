@@ -8,12 +8,14 @@ import {
   type InventoryHistoryPageResponse,
 } from "../../services/inventoryService";
 import StaffHeader from "./StaffHeader";
-import { loadInventory, saveInventory, type Inventory, type InventoryId } from "./staffInventory";
+import { defaultInventory, type Inventory, type InventoryId } from "./staffInventory";
 import * as S from "./StaffStockPage.styles";
 
 export default function StaffStockPage() {
   const [activeView, setActiveView] = useState<"stock" | "history">("stock");
-  const [inventory, setInventory] = useState<Inventory>(loadInventory);
+  const [inventory, setInventory] = useState<Inventory>(defaultInventory);
+  const [inventoryStatus, setInventoryStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [inventoryError, setInventoryError] = useState("");
   const [historyPage, setHistoryPage] = useState<InventoryHistoryPageResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
@@ -27,18 +29,14 @@ export default function StaffStockPage() {
     getInventory()
       .then((items) => {
         if (!active) return;
-        setInventory((current) => {
-          const next = { ...current };
-          items.forEach((item) => {
-            const itemId = API_TO_INVENTORY_ID[item.item];
-            if (itemId) next[itemId] = { ...next[itemId], amount: item.quantity };
-          });
-          saveInventory(next);
-          return next;
-        });
+        setInventory((current) => mergeInventory(current, items));
+        setInventoryStatus("ready");
+        setInventoryError("");
       })
       .catch((error) => {
-        if (active) setMessage(`재고를 불러오지 못했습니다. ${getErrorMessage(error)}`);
+        if (!active) return;
+        setInventoryStatus("error");
+        setInventoryError(getErrorMessage(error));
       });
     return () => { active = false; };
   }, []);
@@ -54,6 +52,19 @@ export default function StaffStockPage() {
       setHistoryLoading(false);
     }
   }, []);
+
+  async function retryInventory() {
+    setInventoryStatus("loading");
+    setInventoryError("");
+    try {
+      const items = await getInventory();
+      setInventory((current) => mergeInventory(current, items));
+      setInventoryStatus("ready");
+    } catch (error) {
+      setInventoryStatus("error");
+      setInventoryError(getErrorMessage(error));
+    }
+  }
 
   function stageStockChange(itemId: InventoryId, change: number) {
     setMessage("");
@@ -76,16 +87,11 @@ export default function StaffStockPage() {
     try {
       await Promise.all(changes.map(([itemId, change]) => {
         const apiItem = INVENTORY_ID_TO_API[itemId];
-        const quantityAfter = Math.max(0, inventory[itemId].amount + change);
-        return apiItem ? changeInventory(apiItem, change, quantityAfter, reason.trim()) : Promise.resolve();
+        return apiItem ? changeInventory(apiItem, change, reason.trim()) : Promise.resolve();
       }));
 
-      const next = { ...inventory };
-      changes.forEach(([itemId, change]) => {
-        next[itemId] = { ...next[itemId], amount: Math.max(0, next[itemId].amount + change) };
-      });
-      setInventory(next);
-      saveInventory(next);
+      const latestInventory = await getInventory();
+      setInventory((current) => mergeInventory(current, latestInventory));
       setPendingChanges({});
       setReason("");
       setMessage(`${changedItemCount}개 품목의 재고 변경이 제출되었습니다.`);
@@ -93,15 +99,9 @@ export default function StaffStockPage() {
     } catch (error) {
       setMessage(getErrorMessage(error));
       getInventory().then((items) => {
-        setInventory((current) => {
-          const next = { ...current };
-          items.forEach((item) => {
-            const itemId = API_TO_INVENTORY_ID[item.item];
-            if (itemId) next[itemId] = { ...next[itemId], amount: item.quantity };
-          });
-          saveInventory(next);
-          return next;
-        });
+        setInventory((current) => mergeInventory(current, items));
+        setInventoryStatus("ready");
+        setInventoryError("");
       }).catch(() => undefined);
     } finally {
       setSubmitting(false);
@@ -114,7 +114,7 @@ export default function StaffStockPage() {
       <S.Main>
         <S.Eyebrow>STOCK</S.Eyebrow>
         <S.Title>창고 재고</S.Title>
-        <S.Description>기념품과 추가 옵션 재고를 관리해요. 판매 중인 상품의 신청 인원으로 필요 수량을 계산해요.</S.Description>
+        <S.Description>기념품 재고를 관리해요. 판매 중인 상품의 신청 인원으로 필요 수량을 계산해요.</S.Description>
         <S.ViewTabs role="tablist" aria-label="재고 관리 메뉴">
           <S.ViewTab type="button" role="tab" aria-selected={activeView === "stock"} $selected={activeView === "stock"} onClick={() => setActiveView("stock")}>재고 현황</S.ViewTab>
           <S.ViewTab type="button" role="tab" aria-selected={activeView === "history"} $selected={activeView === "history"} onClick={() => {
@@ -122,15 +122,19 @@ export default function StaffStockPage() {
             if (historyPage === null && !historyLoading) void loadHistory(0);
           }}>변경 이력</S.ViewTab>
         </S.ViewTabs>
-        {activeView === "stock" ? <>
+        {activeView === "stock" ? inventoryStatus !== "ready" ? (
+          <S.HistoryState>
+            {inventoryStatus === "loading" ? "서버 재고를 불러오는 중입니다." : inventoryError}
+            {inventoryStatus === "error" && <button type="button" onClick={() => void retryInventory()}>다시 시도</button>}
+          </S.HistoryState>
+        ) : <>
         <S.Grid>
           {Object.values(inventory).map((item) => {
             const pendingChange = pendingChanges[item.id] ?? 0;
             const displayedAmount = item.amount + pendingChange;
-            const shortage = displayedAmount < item.safeStock;
             return (
-              <S.Card key={item.id} $shortage={shortage}>
-                <S.CardHeader><span><strong>{item.name}</strong><small>{item.description}</small></span><S.Badge $shortage={shortage}>{shortage ? "재고 부족" : "충분"}</S.Badge></S.CardHeader>
+              <S.Card key={item.id}>
+                <S.CardHeader><span><strong>{item.name}</strong><small>{item.description}</small></span></S.CardHeader>
                 {pendingChange !== 0 ? (
                   <S.AmountChange aria-label={`${item.amount}${item.unit}에서 ${displayedAmount}${item.unit}로 변경`}>
                     <span><b>{item.amount}</b><small>{item.unit}</small></span>
@@ -138,7 +142,6 @@ export default function StaffStockPage() {
                     <span className="next"><b>{displayedAmount}</b><small>{item.unit}</small></span>
                   </S.AmountChange>
                 ) : <S.Amount><b>{displayedAmount}</b><span>{item.unit}</span></S.Amount>}
-                <S.StockInfo><div><span>안전 재고</span><strong>{item.safeStock}{item.unit}</strong></div><div><span>출발 예정 필요 수량</span><strong>{item.needed}</strong></div></S.StockInfo>
                 <S.Actions>
                   <S.QuantityButton type="button" onClick={() => stageStockChange(item.id, -1)} aria-label={`${item.name} 재고 1개 출고`}>−</S.QuantityButton>
                   <S.QuantityButton type="button" onClick={() => stageStockChange(item.id, 1)} aria-label={`${item.name} 재고 1개 입고`}>+</S.QuantityButton>
@@ -149,7 +152,7 @@ export default function StaffStockPage() {
           })}
         </S.Grid>
         <S.SubmissionPanel onSubmit={(event) => { event.preventDefault(); submitStockChanges(); }}>
-          <S.SubmissionHeader><span><strong>재고 변경 사유</strong><small>수량 변경 내용을 확인한 뒤 사유를 입력해 제출해 주세요.</small></span><b>{changedItemCount}개 품목 변경</b></S.SubmissionHeader>
+          <S.SubmissionHeader><span><strong>재고 변경 사유</strong><small>수량 변경 내용을 확인한 뒤 사유를 입력해 제출해 주세요.</small></span></S.SubmissionHeader>
           <S.ReasonField>
             <textarea value={reason} maxLength={255} placeholder="예: 기념품 신규 입고 및 파손 재고 조정" onChange={(event) => setReason(event.target.value)} required />
             <small>{reason.length}/255</small>
@@ -211,9 +214,28 @@ const API_TO_INVENTORY_ID: Record<InventoryApiItem, InventoryId> = {
   SCARF: "scarf",
 };
 
+function mergeInventory(current: Inventory, items: Awaited<ReturnType<typeof getInventory>>) {
+  const next = { ...current };
+  items.forEach((item) => {
+    const itemId = API_TO_INVENTORY_ID[item.item];
+    if (itemId) next[itemId] = { ...next[itemId], name: item.itemName, amount: item.quantity };
+  });
+  return next;
+}
+
 function formatHistoryDate(value: string) {
-  const matched = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-  return matched ? `${matched[1]}.${matched[2]}.${matched[3]} ${matched[4]}:${matched[5]}` : value;
+  const hasTimeZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+  const date = new Date(hasTimeZone ? value : `${value}Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Seoul",
+  }).format(date);
 }
 
 const INVENTORY_UNIT: Record<InventoryApiItem, string> = {
