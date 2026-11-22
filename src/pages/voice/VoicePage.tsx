@@ -76,9 +76,13 @@ export default function VoicePage() {
   const excludedTheme = /이외|다른|외에/.test(currentQuestion) && context.draft.theme
     ? themeLabels[context.draft.theme]
     : undefined;
+  const requiresGrandOrHigher = context.draft.theme === "HONEYMOON" || context.draft.theme === "HEALING";
+  const availableSuggestions = requiresGrandOrHigher
+    ? suggestions.filter((item) => item.field !== "tourLevel" || item.label !== "클래식")
+    : suggestions;
   const matchedSuggestions = lastWord
-    ? suggestions.filter((item) => item.label.includes(lastWord) && item.label !== lastWord)
-    : suggestions.filter((item) => item.field === suggestedField && item.label !== excludedTheme);
+    ? availableSuggestions.filter((item) => item.label.includes(lastWord) && item.label !== lastWord)
+    : availableSuggestions.filter((item) => item.field === suggestedField && item.label !== excludedTheme);
   const visibleSuggestions = needsRetry && !lastWord ? [] : matchedSuggestions.slice(0, 8);
 
   function completeSuggestion(label: string) {
