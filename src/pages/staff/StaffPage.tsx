@@ -271,24 +271,10 @@ export default function StaffPage() {
             </S.TwoColumns>
             <S.Field><S.FieldLabel htmlFor="staff-capacity">최대 인원 (최소 {minimumCapacity}명)</S.FieldLabel><S.Input id="staff-capacity" type="number" min={minimumCapacity} step={themeId === "honeymoon" ? 2 : 1} value={capacityInput} onChange={(event) => setCapacityInput(event.target.value)} required /></S.Field>
 
-            {!selectedTheme ? <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>테마를 선택해 주세요.</strong><small>테마를 선택하면 기념품 재고와 선택 가능한 구성을 확인할 수 있어요.</small></span></S.StockNotice> : inventoryLoading ? (
-              <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>창고 재고를 불러오는 중입니다.</strong><small>서버의 최신 재고를 확인하고 있어요.</small></span></S.StockNotice>
-            ) : selectedStockAmount === undefined ? (
-              <S.StockNotice id="stock-notice" $insufficient><span><strong><FiAlertTriangle aria-hidden="true" />창고 재고를 확인할 수 없습니다.</strong><small>{inventoryError || "잠시 후 다시 시도해 주세요."}</small></span></S.StockNotice>
-            ) : <S.StockNotice id="stock-notice" $insufficient={stockShortage > 0}>
-              <span>
-                <strong>{stockShortage > 0 && <FiAlertTriangle aria-hidden="true" />}창고 재고 · {selectedTheme.gift}</strong>
-                <small>{stockShortage > 0
-                  ? `재고가 ${stockShortage}${selectedTheme.unit} 부족해요. 최대 인원을 ${selectedStockAmount}명 이하로 줄이거나 창고 재고 화면에서 입고한 뒤 등록하세요.`
-                  : "최대 인원 모두에게 기념품을 줄 수 있어요."}</small>
-              </span>
-              <b>{selectedStockAmount}{selectedTheme.unit} 보유 / 최대 인원 {capacity}명 필요</b>
-            </S.StockNotice>}
-
             <S.PriceField><S.FieldLabel htmlFor="staff-price">1인 기본가 (원)</S.FieldLabel><small>클래식 등급 기준이며 항공료·가이드 비용 등을 포함한 금액이에요.</small><S.Input id="staff-price" type="number" min="0" step="1000" value={basePriceInput} onChange={(event) => setBasePriceInput(event.target.value)} required /></S.PriceField>
 
-            <S.OptionHeading>구성별 추가 금액 (1인 · 원)</S.OptionHeading>
-            <S.OptionHelp>선택 가능한 호텔·식사·교통의 추가 금액을 각각 입력해 주세요. 선택 불가 항목은 상품에 포함되지 않아요.</S.OptionHelp>
+            <S.OptionHeading>구성별 1인당 추가 금액 (원)</S.OptionHeading>
+            <S.OptionHelp>아래 금액은 모두 1인 기준이에요. 선택 가능한 호텔·식사·교통의 추가 금액을 각각 입력해 주세요.</S.OptionHelp>
             <S.OptionGroup>
               <S.FieldLabel>호텔</S.FieldLabel>
               <S.OptionGrid $columns={requiresGrandOrHigher ? 2 : 3}>{(requiresGrandOrHigher ? ["4성 호텔", "5성 호텔"] : ["3성 호텔", "4성 호텔", "5성 호텔"]).map((name) => (
@@ -309,6 +295,19 @@ export default function StaffPage() {
             </S.OptionGroup>
             <S.OptionGroup><S.FieldLabel>추가 옵션</S.FieldLabel><S.FixedOptions><span><strong>샴페인</strong><small>+{currency.format(FIXED_DRINK_PRICES.champagne)}원</small></span><span><strong>커피</strong><small>+{currency.format(FIXED_DRINK_PRICES.coffee)}원</small></span></S.FixedOptions></S.OptionGroup>
 
+            {!selectedTheme ? <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>테마를 선택해 주세요.</strong><small>테마를 선택하면 기념품 재고와 선택 가능한 구성을 확인할 수 있어요.</small></span></S.StockNotice> : inventoryLoading ? (
+              <S.StockNotice id="stock-notice" $insufficient={false}><span><strong>창고 재고를 불러오는 중입니다.</strong><small>서버의 최신 재고를 확인하고 있어요.</small></span></S.StockNotice>
+            ) : selectedStockAmount === undefined ? (
+              <S.StockNotice id="stock-notice" $insufficient><span><strong><FiAlertTriangle aria-hidden="true" />창고 재고를 확인할 수 없습니다.</strong><small>{inventoryError || "잠시 후 다시 시도해 주세요."}</small></span></S.StockNotice>
+            ) : <S.StockNotice id="stock-notice" $insufficient={stockShortage > 0}>
+              <span>
+                <strong>{stockShortage > 0 && <FiAlertTriangle aria-hidden="true" />}창고 재고 · {selectedTheme.gift}</strong>
+                <small>{stockShortage > 0
+                  ? `재고가 ${stockShortage}${selectedTheme.unit} 부족해요. 최대 인원을 ${selectedStockAmount}명 이하로 줄이거나 창고 재고 화면에서 입고한 뒤 등록하세요.`
+                  : "최대 인원 모두에게 기념품을 줄 수 있어요."}</small>
+              </span>
+              <b>{selectedStockAmount}{selectedTheme.unit} 보유 / 최대 인원 {capacity}명 필요</b>
+            </S.StockNotice>}
             <S.Warning><strong>주의</strong> 등록한 상품의 일정과 금액은 수정할 수 없어요. 상품 취소 시 예약자에게 취소 안내가 필요하므로 등록 전 다시 한 번 확인해 주세요.</S.Warning>
             <S.RegisterButton type="submit" disabled={!themeId || inventoryLoading || selectedStockAmount === undefined || stockShortage > 0 || submitting}>{submitting ? "등록 중..." : "상품 등록"}</S.RegisterButton>
             <S.FormMessage role="status">{message}</S.FormMessage>

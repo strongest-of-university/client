@@ -1,6 +1,6 @@
 import Header from "../../components/Header";
 import { getErrorMessage } from "../../api/client";
-import { getMyBookings, type BookingDto } from "../../services/bookingService";
+import { getMyBookings, getMyCompletedTrips, type BookingDto } from "../../services/bookingService";
 import { getMyProfile } from "../../services/userService";
 import { useAuth } from "../../contexts/auth/authContext";
 import { useEffect, useRef, useState } from "react";
@@ -35,7 +35,7 @@ const themes = [
 type HomeReservation = { bookingId: number; title: string; details: string; status: string; confirmed: boolean };
 type TravelHistoryGroup = {
   year: string;
-  trips: { date: string; title: string; period: string; grade: string; price: string }[];
+  trips: { bookingId: number; date: string; title: string; period: string; grade: string; price: string }[];
 };
 
 export default function HomePage() {
@@ -51,6 +51,7 @@ export default function HomePage() {
   const [historyItems, setHistoryItems] = useState<TravelHistoryGroup[]>([]);
   const [profileName, setProfileName] = useState("고객");
   const [homeDataError, setHomeDataError] = useState("");
+  const [historyDataError, setHistoryDataError] = useState("");
   const themeStackRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -64,8 +65,8 @@ export default function HomePage() {
   useEffect(() => {
     if (!isLoggedIn) return;
     let active = true;
-    Promise.allSettled([getMyBookings(), getMyProfile()])
-      .then(([bookingsResult, profileResult]) => {
+    Promise.allSettled([getMyBookings(), getMyCompletedTrips(), getMyProfile()])
+      .then(([bookingsResult, completedTripsResult, profileResult]) => {
         if (!active) return;
         const errors: string[] = [];
         if (bookingsResult.status === "fulfilled") {
@@ -74,9 +75,14 @@ export default function HomePage() {
             .filter((booking) => booking.bookingStatus !== "COMPLETED" && booking.bookingStatus !== "CANCELLED")
             .slice(0, 2)
             .map(toHomeReservation));
-          setHistoryItems(toTravelHistory(bookings));
         } else {
           errors.push(`예약 정보를 불러오지 못했습니다. ${getErrorMessage(bookingsResult.reason)}`);
+        }
+        if (completedTripsResult.status === "fulfilled") {
+          setHistoryItems(toTravelHistory(completedTripsResult.value.bookings));
+          setHistoryDataError("");
+        } else {
+          setHistoryDataError(`완료 여행을 불러오지 못했습니다. ${getErrorMessage(completedTripsResult.reason)}`);
         }
         if (profileResult.status === "fulfilled") {
           setProfileName(profileResult.value.name);
@@ -256,14 +262,14 @@ export default function HomePage() {
         size="large"
         tone="warm"
       >
-        <S.HistorySubtitle>이전 여행 · 최근순</S.HistorySubtitle>
+        <S.HistorySubtitle>완료 여행 · 최근순</S.HistorySubtitle>
         <S.HistoryList>
           {historyItems.map(({ year, trips }) => (
             <S.HistoryYear key={year}>
               <S.HistoryYearTitle>{year}</S.HistoryYearTitle>
               <S.TripList>
                 {trips.map((trip) => (
-                  <S.TripItem key={`${year}-${trip.date}`}>
+                  <S.TripItem key={trip.bookingId}>
                     <S.TripDate>{trip.date}</S.TripDate>
                     <S.TripCard>
                       <S.TripTitle>{trip.title}</S.TripTitle>
@@ -279,9 +285,10 @@ export default function HomePage() {
             </S.HistoryYear>
           ))}
         </S.HistoryList>
-        {historyItems.length === 0 && <S.HistorySubtitle>완료된 이전 여행이 없습니다.</S.HistorySubtitle>}
+        {historyDataError && <S.DataError role="status">{historyDataError}</S.DataError>}
+        {!historyDataError && historyItems.length === 0 && <S.HistorySubtitle>완료된 여행이 없습니다.</S.HistorySubtitle>}
         <S.MoreTripsButton type="button" onClick={() => window.location.assign("/mypage")}>
-          지난 여행 더 보러 가기 <span aria-hidden="true">→</span>
+          완료 여행 더 보러 가기 <span aria-hidden="true">→</span>
         </S.MoreTripsButton>
       </Modal>
       <Modal
@@ -348,6 +355,7 @@ function toTravelHistory(bookings: BookingDto[]): TravelHistoryGroup[] {
     const year = `${departure.slice(0, 4)}년`;
     const trips = grouped.get(year) ?? [];
     trips.push({
+      bookingId: booking.bookingId,
       date: departure ? `${departure.slice(5, 7)}월 ${departure.slice(8, 10)}일` : "일정 미정",
       title: HOME_THEME_TITLE[booking.theme ?? ""] ?? "테마 여행",
       period: `${shortDate(booking.departureDate)} – ${shortDate(booking.returnDate).slice(5)}`,

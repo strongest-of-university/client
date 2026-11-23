@@ -94,6 +94,10 @@ export const ProfileEditButton = styled.button`
   &:disabled { opacity: 0.45; cursor: wait; }
 `;
 
+export const MoreReservationsButton = styled(ProfileEditButton)`
+  margin: 22px 0 0;
+`;
+
 export const ProfileCard = styled.section`
   display: grid;
   gap: 8px;
@@ -251,34 +255,82 @@ export const DetailInner = styled.div`
 `;
 
 export const DetailTitle = styled.h5`
-  margin: 14px 0 9px;
-  padding-top: 13px;
+  margin: 18px 0 12px;
+  padding-top: 16px;
   border-top: 1px solid #e9e3db;
-  font-size: 12px;
+  color: #1f1c19;
+  font-size: 15px;
+  line-height: 1.4;
 `;
 
 export const DetailList = styled.dl`
   display: grid;
-  gap: 7px;
-  margin: 0 0 2px;
+  gap: 0;
+  margin: 0 0 4px;
+  overflow: hidden;
+  border: 1px solid #e8e0d6;
+  border-radius: 10px;
+  background: #fbfaf8;
 
   div {
     display: grid;
-    grid-template-columns: 70px minmax(0, 1fr);
-    gap: 10px;
+    grid-template-columns: 116px minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    min-height: 42px;
+    padding: 9px 13px;
+    border-bottom: 1px solid #eee8e0;
+
+    &:last-child {
+      min-height: 48px;
+      border-bottom: 0;
+      background: #f2eee7;
+    }
   }
 
   dt {
-    color: #77716b;
-    font-size: 9px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #746d65;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.45;
+
+    svg {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      color: #5f5549;
+      stroke-width: 1.8;
+    }
   }
 
   dd {
     margin: 0;
-    color: #282521;
-    font-size: 10px;
-    font-weight: 600;
+    color: #211e1a;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.45;
     text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  div:last-child dd {
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  div:last-child dt svg {
+    color: #26221e;
+  }
+
+  @media (max-width: 420px) {
+    div {
+      grid-template-columns: 100px minmax(0, 1fr);
+      gap: 10px;
+      padding-inline: 11px;
+    }
   }
 `;
 

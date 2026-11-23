@@ -29,6 +29,20 @@ export type BookingDto = {
 export type BookingPageResponse = {
   bookings?: BookingDto[];
   content?: BookingDto[];
+  currentPage?: number;
+  number?: number;
+  totalPages?: number;
+  totalElements?: number;
+  hasNext?: boolean;
+  last?: boolean;
+};
+
+export type BookingPage = {
+  bookings: BookingDto[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  hasNext: boolean;
 };
 
 export type BookingSelection = {
@@ -78,9 +92,18 @@ export type TravelProductBookingPage = {
   totalElements: number;
 };
 
-export async function getMyBookings() {
-  const result = await apiRequest<BookingPageResponse | BookingDto[]>("/api/v1/bookings/me/history");
-  return Array.isArray(result) ? result : result.bookings ?? result.content ?? [];
+export async function getMyBookingPage(page = 0) {
+  const result = await apiRequest<BookingPageResponse | BookingDto[]>(`/api/v1/bookings/me/history?page=${page}`);
+  return normalizeBookingPage(result, page);
+}
+
+export async function getMyBookings(page = 0) {
+  return (await getMyBookingPage(page)).bookings;
+}
+
+export async function getMyCompletedTrips(page = 0) {
+  const result = await apiRequest<BookingPageResponse | BookingDto[]>(`/api/v1/bookings/me?page=${page}`);
+  return normalizeBookingPage(result, page);
 }
 
 export function getBooking(bookingId: number) {
@@ -127,4 +150,21 @@ export async function createBooking(selection: BookingSelection, cardNumber: str
 
 export function getTravelProductBookings(travelProductId: number, page = 0) {
   return apiRequest<TravelProductBookingPage>(`/api/v1/travel-products/${travelProductId}/bookings?page=${page}`);
+}
+
+function normalizeBookingPage(result: BookingPageResponse | BookingDto[], requestedPage: number): BookingPage {
+  if (Array.isArray(result)) {
+    return { bookings: result, currentPage: requestedPage, totalPages: 1, totalElements: result.length, hasNext: false };
+  }
+
+  const bookings = result.bookings ?? result.content ?? [];
+  const currentPage = result.currentPage ?? result.number ?? requestedPage;
+  const totalPages = result.totalPages ?? Math.max(1, currentPage + 1);
+  return {
+    bookings,
+    currentPage,
+    totalPages,
+    totalElements: result.totalElements ?? bookings.length,
+    hasNext: result.hasNext ?? (result.last !== undefined ? !result.last : currentPage + 1 < totalPages),
+  };
 }

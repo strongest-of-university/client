@@ -84,28 +84,51 @@ export default function StaffStockPage() {
     setSubmitting(true);
     setMessage("");
     const changes = (Object.entries(pendingChanges) as [InventoryId, number][]).filter(([, change]) => change !== 0);
-    try {
-      await Promise.all(changes.map(([itemId, change]) => {
-        const apiItem = INVENTORY_ID_TO_API[itemId];
-        return apiItem ? changeInventory(apiItem, change, reason.trim()) : Promise.resolve();
-      }));
+    const results = await Promise.allSettled(changes.map(([itemId, change]) => {
+      const apiItem = INVENTORY_ID_TO_API[itemId];
+      return apiItem ? changeInventory(apiItem, change, reason.trim()) : Promise.reject(new Error("지원하지 않는 재고 품목입니다."));
+    }));
+    const successfulChanges = new Map<InventoryId, number>();
+    const failedChanges: { itemId: InventoryId; error: unknown }[] = [];
 
+    results.forEach((result, index) => {
+      const [itemId, change] = changes[index];
+      if (result.status === "fulfilled") successfulChanges.set(itemId, change);
+      else failedChanges.push({ itemId, error: result.reason });
+    });
+
+    if (successfulChanges.size > 0) {
+      setPendingChanges((current) => {
+        const next = { ...current };
+        successfulChanges.forEach((submittedChange, itemId) => {
+          const remainingChange = (next[itemId] ?? 0) - submittedChange;
+          if (remainingChange === 0) delete next[itemId];
+          else next[itemId] = remainingChange;
+        });
+        return next;
+      });
+      await loadHistory(0);
+    }
+
+    try {
       const latestInventory = await getInventory();
       setInventory((current) => mergeInventory(current, latestInventory));
-      setPendingChanges({});
-      setReason("");
-      setMessage(`${changedItemCount}개 품목의 재고 변경이 제출되었습니다.`);
-      await loadHistory(0);
+      setInventoryStatus("ready");
+      setInventoryError("");
     } catch (error) {
-      setMessage(getErrorMessage(error));
-      getInventory().then((items) => {
-        setInventory((current) => mergeInventory(current, items));
-        setInventoryStatus("ready");
-        setInventoryError("");
-      }).catch(() => undefined);
-    } finally {
-      setSubmitting(false);
+      setInventoryStatus("error");
+      setInventoryError(getErrorMessage(error));
     }
+
+    if (failedChanges.length === 0) {
+      setReason("");
+      setMessage(`${successfulChanges.size}개 품목의 재고 변경이 제출되었습니다.`);
+    } else {
+      const failedNames = failedChanges.map(({ itemId }) => inventory[itemId].name).join(", ");
+      const firstError = getErrorMessage(failedChanges[0].error);
+      setMessage(`${successfulChanges.size}개 품목 변경 성공 · ${failedNames} 변경 실패: ${firstError}`);
+    }
+    setSubmitting(false);
   }
 
   return (
@@ -114,7 +137,7 @@ export default function StaffStockPage() {
       <S.Main>
         <S.Eyebrow>STOCK</S.Eyebrow>
         <S.Title>창고 재고</S.Title>
-        <S.Description>기념품 재고를 관리해요. 판매 중인 상품의 신청 인원으로 필요 수량을 계산해요.</S.Description>
+        <S.Description>기념품 재고를 관리해요. 상품을 등록하면 정원만큼 해당 테마의 기념품 재고가 차감돼요.</S.Description>
         <S.ViewTabs role="tablist" aria-label="재고 관리 메뉴">
           <S.ViewTab type="button" role="tab" aria-selected={activeView === "stock"} $selected={activeView === "stock"} onClick={() => setActiveView("stock")}>재고 현황</S.ViewTab>
           <S.ViewTab type="button" role="tab" aria-selected={activeView === "history"} $selected={activeView === "history"} onClick={() => {

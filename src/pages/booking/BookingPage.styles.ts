@@ -526,8 +526,15 @@ export const CheckCircle = styled.span`
 `;
 
 export const CompletionTitle = styled.h2`
-  margin: 18px 0 28px;
+  margin: 18px 0 10px;
   font: 700 27px "Noto Serif KR", serif;
+  text-align: center;
+`;
+
+export const CompletionDescription = styled.p`
+  margin: 0 0 28px;
+  color: var(--color-text-muted);
+  line-height: 1.65;
   text-align: center;
 `;
 

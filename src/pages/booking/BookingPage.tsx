@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { FiCheck, FiChevronDown, FiChevronRight, FiCreditCard, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
+import { FiCheck, FiChevronRight, FiFeather, FiFlag, FiHeart, FiMap } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
 import { createBooking, previewBooking, type BookingPreview, type BookingSelection } from "../../services/bookingService";
 import { getTravelProduct, getTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProduct } from "../../services/travelProductService";
@@ -180,11 +180,6 @@ export default function BookingPage() {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [securityCode, setSecurityCode] = useState("");
-  const [cardOwner, setCardOwner] = useState("");
-  const [installment, setInstallment] = useState("일시불");
-  const [installmentOpen, setInstallmentOpen] = useState(false);
   const [productsByTheme, setProductsByTheme] = useState<Partial<Record<ThemeCode, TravelProduct[]>>>({});
   const [failedThemeCodes, setFailedThemeCodes] = useState<Set<ThemeCode>>(() => new Set());
   const [productsLoading, setProductsLoading] = useState(true);
@@ -219,10 +214,7 @@ export default function BookingPage() {
   const selectedMeal = mealOption || grade?.meal;
   const requiresGrandOrHigher = theme?.id === "honeymoon" || theme?.id === "healing";
   const formattedCardNumber = cardNumber.replace(/(\d{4})(?=\d)/g, "$1 ");
-  const paymentReady = cardNumber.length === 16
-    && /^\d{2} \/ \d{2}$/.test(expiry)
-    && securityCode.length === 3
-    && cardOwner.trim().length > 0;
+  const paymentReady = /^\d{16}$/.test(cardNumber);
 
   const bookingSelection: BookingSelection | null = (() => {
     if (!schedule?.travelProductId || !hasCapacity || !grade || !selectedHotel || !selectedTransport || !selectedMeal) return null;
@@ -394,11 +386,6 @@ export default function BookingPage() {
     setCardNumber(value.replace(/\D/g, "").slice(0, 16));
   }
 
-  function formatExpiry(value: string) {
-    const digits = value.replace(/\D/g, "").slice(0, 4);
-    setExpiry(digits.length > 2 ? `${digits.slice(0, 2)} / ${digits.slice(2)}` : digits);
-  }
-
   async function completePayment() {
     if (!paymentReady || !bookingSelection) return;
     setPaymentOpen(false);
@@ -534,7 +521,7 @@ export default function BookingPage() {
                       const unavailable = requiresGrandOrHigher && choice.value === "3성급 호텔";
                       const selected = selectedHotel === choice.value;
                       const price = choice.value === "3성급 호텔" ? selectedProduct?.threeStarHotelPrice : choice.value === "4성급 호텔" ? selectedProduct?.fourStarHotelPrice : selectedProduct?.fiveStarHotelPrice;
-                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setHotelOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{unavailable ? "이 테마 선택 불가" : `${formatApiOptionPrice(price)}${choice.value === grade.hotel ? " · 등급 기본" : ""}`}</span></S.OptionButton>;
+                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setHotelOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{unavailable ? "이 테마 선택 불가" : formatOptionMeta(price, choice.value === grade.hotel ? "등급 기본" : undefined)}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -544,7 +531,7 @@ export default function BookingPage() {
                     {transportChoices.map((choice) => {
                       const selected = selectedTransport === choice.value;
                       const price = choice.value.startsWith("2인") ? selectedProduct?.luxuryCarPrice : selectedProduct?.luxuryVanPrice;
-                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => setTransportOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatApiOptionPrice(price)}{choice.value === theme.transport ? " · 테마 기본" : ""}</span></S.OptionButton>;
+                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => setTransportOption(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatOptionMeta(price, choice.value === theme.transport ? "테마 기본" : undefined)}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -556,7 +543,7 @@ export default function BookingPage() {
                       const selected = selectedMeal === choice.value;
                       const label = choice.value === "고급 레스토랑 스테이크" ? "스테이크" : choice.value;
                       const price = choice.value === "도시락" ? selectedProduct?.lunchPrice : choice.value === "현지식 레스토랑" ? selectedProduct?.localRestaurantPrice : selectedProduct?.steakPrice;
-                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setMealOption(choice.value)} aria-pressed={selected}><strong>{label}</strong><span>{unavailable ? "이 테마 선택 불가" : `${formatApiOptionPrice(price)}${choice.value === grade.meal ? " · 등급 기본" : ""}`}</span></S.OptionButton>;
+                      return <S.OptionButton key={choice.value} type="button" disabled={unavailable} $selected={selected} onClick={() => setMealOption(choice.value)} aria-pressed={selected}><strong>{label}</strong><span>{unavailable ? "이 테마 선택 불가" : formatOptionMeta(price, choice.value === grade.meal ? "등급 기본" : undefined)}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -566,7 +553,7 @@ export default function BookingPage() {
                     {drinkChoices.map((choice) => {
                       const selected = drinkOptions.includes(choice.value);
                       const price = choice.value === "샴페인" ? FIXED_DRINK_PRICES.champagne : FIXED_DRINK_PRICES.coffee;
-                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => toggleDrink(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatApiOptionPrice(price)}{choice.value === grade.drink ? " · 등급 기본" : ""}</span></S.OptionButton>;
+                      return <S.OptionButton key={choice.value} type="button" $selected={selected} onClick={() => toggleDrink(choice.value)} aria-pressed={selected}><strong>{choice.value}</strong><span>{formatOptionMeta(price, choice.value === grade.drink ? "등급 기본" : undefined)}</span></S.OptionButton>;
                     })}
                   </S.OptionChoices>
                 </S.OptionRow>
@@ -638,7 +625,8 @@ export default function BookingPage() {
         <S.CompletionBackdrop role="dialog" aria-modal="true" aria-labelledby="payment-complete-title">
           <S.CompletionDialog>
             <S.CheckCircle aria-hidden="true"><FiCheck /></S.CheckCircle>
-            <S.CompletionTitle id="payment-complete-title">결제가 완료되었어요</S.CompletionTitle>
+            <S.CompletionTitle id="payment-complete-title">예약 신청이 접수됐어요</S.CompletionTitle>
+            <S.CompletionDescription>출발 기준 인원이 모이면 예약이 확정되고 문자로 안내해 드려요.</S.CompletionDescription>
             <S.CompletionActions>
               <S.HomeButton type="button" onClick={() => window.location.assign("/")}>홈으로</S.HomeButton>
               <S.HistoryButton type="button" onClick={() => window.location.assign("/mypage")}>예약 내역 보기</S.HistoryButton>
@@ -666,67 +654,12 @@ export default function BookingPage() {
         size="large"
         tone="warm"
       >
-        <S.PaymentDescription>카드 정보를 입력해 주세요. 결제가 끝나면 예약 신청이 완료돼요.</S.PaymentDescription>
+        <S.PaymentDescription>숫자 16자리의 카드 번호를 입력해 주세요. 결제가 끝나면 예약 신청이 완료돼요.</S.PaymentDescription>
         <S.SubmitMessage role="alert" aria-live="polite">{submitMessage}</S.SubmitMessage>
         <S.PaymentFields>
           <S.PaymentField>
             <label htmlFor="manual-payment-number">카드 번호</label>
-            <S.CardInputWrap>
-              <input id="manual-payment-number" name="manual-payment-number" value={formattedCardNumber} onChange={(event) => updateCardNumber(event.target.value)} placeholder="1234 1234 1234 1234" inputMode="numeric" pattern="[0-9 ]*" maxLength={19} autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
-              <S.CardBrands aria-hidden="true"><b>VISA</b><b>MC</b><b>BC</b></S.CardBrands>
-            </S.CardInputWrap>
-          </S.PaymentField>
-          <S.PaymentFieldRow>
-            <S.PaymentField>
-              <label htmlFor="manual-valid-date">유효기간</label>
-              <input id="manual-valid-date" name="manual-valid-date" value={expiry} onChange={(event) => formatExpiry(event.target.value)} placeholder="월 / 년" inputMode="numeric" autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
-            </S.PaymentField>
-            <S.PaymentField>
-              <label htmlFor="manual-security-code">보안 코드</label>
-              <S.SecurityInputWrap>
-                <input id="manual-security-code" name="manual-security-code" value={securityCode} onChange={(event) => setSecurityCode(event.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="3자리" inputMode="numeric" autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
-                <FiCreditCard aria-hidden="true" />
-              </S.SecurityInputWrap>
-            </S.PaymentField>
-          </S.PaymentFieldRow>
-          <S.PaymentField>
-            <label htmlFor="manual-owner-name">카드 소유자 이름</label>
-            <input id="manual-owner-name" name="manual-owner-name" value={cardOwner} onChange={(event) => setCardOwner(event.target.value)} autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
-          </S.PaymentField>
-          <S.PaymentField>
-            <label id="installment-label">할부</label>
-            <S.InstallmentSelect>
-              <S.InstallmentTrigger
-                type="button"
-                aria-labelledby="installment-label"
-                aria-haspopup="listbox"
-                aria-expanded={installmentOpen}
-                onClick={() => setInstallmentOpen((open) => !open)}
-              >
-                <span>{installment}</span>
-                <FiChevronDown aria-hidden="true" />
-              </S.InstallmentTrigger>
-              {installmentOpen && (
-                <S.InstallmentList role="listbox" aria-labelledby="installment-label">
-                  {["일시불", "2개월", "3개월", "6개월", "12개월"].map((option) => (
-                    <S.InstallmentOption
-                      key={option}
-                      type="button"
-                      role="option"
-                      aria-selected={installment === option}
-                      $selected={installment === option}
-                      onClick={() => {
-                        setInstallment(option);
-                        setInstallmentOpen(false);
-                      }}
-                    >
-                      {option}
-                      {installment === option && <FiCheck aria-hidden="true" />}
-                    </S.InstallmentOption>
-                  ))}
-                </S.InstallmentList>
-              )}
-            </S.InstallmentSelect>
+            <input id="manual-payment-number" name="manual-payment-number" value={formattedCardNumber} onChange={(event) => updateCardNumber(event.target.value)} placeholder="1234 1234 1234 1234" inputMode="numeric" pattern="[0-9 ]*" maxLength={19} autoComplete="new-password" data-1p-ignore="true" data-lpignore="true" />
           </S.PaymentField>
         </S.PaymentFields>
         <S.PaymentTotal>
@@ -744,8 +677,12 @@ export default function BookingPage() {
 
 function formatApiOptionPrice(value?: number) {
   if (typeof value !== "number") return "가격 확인 중";
-  if (value === 0) return "0원 · 기본가 포함";
+  if (value === 0) return "+0원";
   return `+${currency.format(value)}원`;
+}
+
+function formatOptionMeta(value?: number, baseLabel?: string) {
+  return [formatApiOptionPrice(value), baseLabel].filter(Boolean).join(" · ");
 }
 
 function clampPeople(value: number, capacity: number, evenOnly: boolean) {

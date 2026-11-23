@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { FiChevronDown } from "react-icons/fi";
+import { FiCalendar, FiCoffee, FiCreditCard, FiDroplet, FiGift, FiHome, FiStar, FiTruck, FiUsers, FiChevronDown } from "react-icons/fi";
 import { getErrorMessage } from "../../api/client";
-import { cancelBooking, getBooking, getMyBookings, type BookingDto } from "../../services/bookingService";
+import { cancelBooking, getBooking, getMyBookingPage, type BookingDto } from "../../services/bookingService";
 import { getMyProfile, updateMyProfile, type UserProfile } from "../../services/userService";
 import Header from "../../components/Header";
 import Modal from "../../components/Modal";
@@ -29,6 +29,9 @@ type Reservation = {
   };
   cancelState?: "available" | "unavailable";
   paymentAmount?: number;
+  cancellationFee?: number;
+  refundAmount?: number;
+  bookingStatus: string;
   cancelled: boolean;
 };
 
@@ -36,6 +39,8 @@ export default function MyPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextBookingPage, setNextBookingPage] = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [expandedReservation, setExpandedReservation] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null);
@@ -47,18 +52,19 @@ export default function MyPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [activeSection, setActiveSection] = useState<"history" | "profile">("history");
   const cancelAmount = cancelTarget?.paymentAmount;
-  const cancellationFee = cancelAmount === undefined ? undefined : Math.round(cancelAmount * 0.1);
-  const refundAmount = cancelAmount === undefined || cancellationFee === undefined ? undefined : cancelAmount - cancellationFee;
+  const cancellationFee = cancelTarget?.cancellationFee;
+  const refundAmount = cancelTarget?.refundAmount;
   const reservationGroups = groupReservationsByYear(reservations);
 
   useEffect(() => {
     let active = true;
-    getMyBookings()
-      .then(async (bookings) => {
-        const detailedBookings = await Promise.all(
-          bookings.map((booking) => getBooking(booking.bookingId).catch(() => booking)),
-        );
-        if (active) setReservations(detailedBookings.map(toReservation));
+    getMyBookingPage()
+      .then(async (page) => {
+        const detailedBookings = await loadBookingDetails(page.bookings);
+        if (active) {
+          setReservations(detailedBookings.map(toReservation));
+          setNextBookingPage(page.hasNext ? page.currentPage + 1 : null);
+        }
       })
       .catch((error) => {
         if (active) setMessage(getErrorMessage(error));
@@ -68,6 +74,25 @@ export default function MyPage() {
       });
     return () => { active = false; };
   }, []);
+
+  async function loadMoreBookings() {
+    if (nextBookingPage === null || loadingMore) return;
+    setLoadingMore(true);
+    setMessage("");
+    try {
+      const page = await getMyBookingPage(nextBookingPage);
+      const detailedBookings = await loadBookingDetails(page.bookings);
+      setReservations((current) => {
+        const knownIds = new Set(current.map((reservation) => reservation.bookingId));
+        return [...current, ...detailedBookings.filter((booking) => !knownIds.has(booking.bookingId)).map(toReservation)];
+      });
+      setNextBookingPage(page.hasNext ? page.currentPage + 1 : null);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -213,15 +238,15 @@ export default function MyPage() {
                   <S.DetailInner>
                     <S.DetailTitle>예약 상세 정보</S.DetailTitle>
                     <S.DetailList>
-                      <div><dt>여행 일정</dt><dd>{reservation.details.period}</dd></div>
-                      <div><dt>신청 인원</dt><dd>{reservation.details.people}</dd></div>
-                      <div><dt>여행 등급</dt><dd>{reservation.details.grade}</dd></div>
-                      <div><dt>호텔</dt><dd>{reservation.details.hotel}</dd></div>
-                      <div><dt>교통</dt><dd>{reservation.details.transport}</dd></div>
-                      <div><dt>식사</dt><dd>{reservation.details.meal}</dd></div>
-                      <div><dt>추가 음료</dt><dd>{reservation.details.drink}</dd></div>
-                      <div><dt>기념품</dt><dd>{reservation.details.gift}</dd></div>
-                      <div><dt>결제 금액</dt><dd>{reservation.details.payment}</dd></div>
+                      <div><dt><FiCalendar aria-hidden="true" /><span>여행 일정</span></dt><dd>{reservation.details.period}</dd></div>
+                      <div><dt><FiUsers aria-hidden="true" /><span>신청 인원</span></dt><dd>{reservation.details.people}</dd></div>
+                      <div><dt><FiStar aria-hidden="true" /><span>여행 등급</span></dt><dd>{reservation.details.grade}</dd></div>
+                      <div><dt><FiHome aria-hidden="true" /><span>호텔</span></dt><dd>{reservation.details.hotel}</dd></div>
+                      <div><dt><FiTruck aria-hidden="true" /><span>교통</span></dt><dd>{reservation.details.transport}</dd></div>
+                      <div><dt><FiCoffee aria-hidden="true" /><span>식사</span></dt><dd>{reservation.details.meal}</dd></div>
+                      <div><dt><FiDroplet aria-hidden="true" /><span>추가 음료</span></dt><dd>{reservation.details.drink}</dd></div>
+                      <div><dt><FiGift aria-hidden="true" /><span>기념품</span></dt><dd>{reservation.details.gift}</dd></div>
+                      <div><dt><FiCreditCard aria-hidden="true" /><span>결제 금액</span></dt><dd>{reservation.details.payment}</dd></div>
                     </S.DetailList>
                   </S.DetailInner>
                 </S.DetailPanel>
@@ -245,9 +270,7 @@ export default function MyPage() {
                     <S.CancelButton type="button" disabled>
                       예약 취소 불가
                     </S.CancelButton>
-                    <S.Note>
-                      출발 7일 전까지만 예약을 취소할 수 있어요.
-                    </S.Note>
+                    <S.Note>{cancellationUnavailableMessage(reservation)}</S.Note>
                   </>
                 )}
               </S.Card>
@@ -257,6 +280,11 @@ export default function MyPage() {
         </S.Timeline>
         </section>
         ))}
+        {nextBookingPage !== null && (
+          <S.MoreReservationsButton type="button" onClick={() => void loadMoreBookings()} disabled={loadingMore}>
+            {loadingMore ? "예약 내역 불러오는 중..." : "예약 내역 더보기"}
+          </S.MoreReservationsButton>
+        )}
         <S.LiveMessage role="status" aria-live="polite">
           {message}
         </S.LiveMessage>
@@ -302,10 +330,10 @@ export default function MyPage() {
             </S.CancelSummary>
             <S.RefundBox>
               <div><span>결제 금액</span><strong>{formatPaymentAmount(cancelAmount)}</strong></div>
-              <div><span>취소 수수료 (10%)</span><strong className="fee">{cancellationFee === undefined ? "정보 없음" : `−${cancellationFee.toLocaleString("ko-KR")}원`}</strong></div>
+              <div><span>취소 수수료</span><strong className="fee">{formatCancellationFee(cancellationFee)}</strong></div>
               <div className="refund"><span>환불 예정</span><strong>{formatPaymentAmount(refundAmount)}</strong></div>
             </S.RefundBox>
-            <S.CancellationRule>출발 7일 전까지 취소할 수 있으며, 결제 금액의 10%를 제외한 금액이 환불됩니다.</S.CancellationRule>
+            <S.CancellationRule>{cancellationPolicyMessage(cancelTarget)}</S.CancellationRule>
             <S.CancelActions>
               <S.BackButton type="button" onClick={() => setCancelTarget(null)}>돌아가기</S.BackButton>
               <S.ConfirmCancelButton type="button" onClick={() => void confirmCancellation()} disabled={cancelling}>{cancelling ? "취소 중..." : "취소하기"}</S.ConfirmCancelButton>
@@ -365,7 +393,7 @@ function toReservation(booking: BookingDto): Reservation {
   const status = STATUS_LABEL[booking.bookingStatus] ?? booking.bookingStatus;
   const cancelled = booking.bookingStatus === "CANCELLED";
   const statusAllowsCancellation = booking.bookingStatus !== "IN_PROGRESS" && booking.bookingStatus !== "COMPLETED";
-  const cancellable = statusAllowsCancellation && isAtLeastSevenDaysBefore(booking.departureDate);
+  const cancellable = statusAllowsCancellation && booking.cancellable === true;
   return {
     bookingId: booking.bookingId,
     year: booking.departureDate?.slice(0, 4) || "일정 미정",
@@ -388,18 +416,11 @@ function toReservation(booking: BookingDto): Reservation {
     },
     cancelState: cancelled ? undefined : cancellable ? "available" : "unavailable",
     paymentAmount: price,
+    cancellationFee: booking.cancellationFee,
+    refundAmount: booking.refundAmount,
+    bookingStatus: booking.bookingStatus,
     cancelled,
   };
-}
-
-function isAtLeastSevenDaysBefore(departureDate?: string) {
-  const date = departureDate?.slice(0, 10).split("-").map(Number);
-  if (!date || date.length !== 3 || date.some((value) => !Number.isFinite(value))) return false;
-
-  const now = new Date();
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const departure = Date.UTC(date[0], date[1] - 1, date[2]);
-  return departure - today >= 7 * 24 * 60 * 60 * 1000;
 }
 
 function groupReservationsByYear(reservations: Reservation[]) {
@@ -418,4 +439,37 @@ function groupReservationsByYear(reservations: Reservation[]) {
 
 function formatPaymentAmount(value?: number) {
   return value === undefined ? "결제 금액 정보 없음" : `${value.toLocaleString("ko-KR")}원`;
+}
+
+function formatCancellationFee(value?: number) {
+  if (value === undefined) return "정보 없음";
+  if (value === 0) return "0원";
+  return `−${value.toLocaleString("ko-KR")}원`;
+}
+
+function cancellationPolicyMessage(reservation: Reservation) {
+  if (reservation.bookingStatus === "PENDING_CONFIRMATION") {
+    return "출발 확정 전 예약은 취소 수수료 없이 결제 금액 전액이 환불됩니다.";
+  }
+  if (reservation.bookingStatus === "CONFIRMED") {
+    return "출발 확정 예약은 출발 7일 전까지 취소할 수 있으며, 서버에서 계산한 취소 수수료를 제외한 금액이 환불됩니다.";
+  }
+  return "취소 수수료와 환불 예정 금액은 서버의 예약 상태와 취소 정책에 따라 계산됩니다.";
+}
+
+function cancellationUnavailableMessage(reservation: Reservation) {
+  if (reservation.bookingStatus === "IN_PROGRESS") return "여행이 진행 중이라 예약을 취소할 수 없어요.";
+  if (reservation.bookingStatus === "COMPLETED") return "여행이 완료되어 예약을 취소할 수 없어요.";
+  return "현재 예약 상태에서는 취소할 수 없어요.";
+}
+
+async function loadBookingDetails(bookings: BookingDto[]) {
+  return Promise.all(bookings.map(async (booking) => {
+    try {
+      const detail = await getBooking(booking.bookingId);
+      return { ...booking, ...detail, cancellable: booking.cancellable };
+    } catch {
+      return booking;
+    }
+  }));
 }
