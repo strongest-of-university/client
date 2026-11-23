@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getErrorMessage } from "../../api/client";
 import { getNotifications, type NotificationPage } from "../../services/notificationService";
-import StaffHeader from "./StaffHeader";
+import StaffHeader from "../../components/StaffHeader";
 import * as S from "./StaffSmsPage.styles";
 
 type SmsMessage = { id: string; sentAt: string; type: string; recipients: string; content: string };

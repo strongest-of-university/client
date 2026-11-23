@@ -4,7 +4,7 @@ import { getErrorMessage } from "../../api/client";
 import { getInventory, type InventoryApiItem } from "../../services/inventoryService";
 import { createTravelProduct, deleteTravelProduct, getStaffTravelProducts, getTravelProduct, minimumApplicantsForTheme, type ThemeCode, type TravelProduct, type TravelProductStatus } from "../../services/travelProductService";
 import Modal from "../../components/Modal";
-import StaffHeader from "./StaffHeader";
+import StaffHeader from "../../components/StaffHeader";
 import StaffProductStatus from "./StaffProductStatusBadge";
 import { type InventoryId } from "./staffInventory";
 import * as S from "./StaffPage.styles";

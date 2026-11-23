@@ -7,7 +7,7 @@ import {
   type InventoryApiItem,
   type InventoryHistoryPageResponse,
 } from "../../services/inventoryService";
-import StaffHeader from "./StaffHeader";
+import StaffHeader from "../../components/StaffHeader";
 import { defaultInventory, type Inventory, type InventoryId } from "./staffInventory";
 import * as S from "./StaffStockPage.styles";
 

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getErrorMessage } from "../../api/client";
 import { getTravelProductBookings, type TravelProductBooking } from "../../services/bookingService";
 import { getStaffTravelProducts, minimumApplicantsForTheme, type ThemeCode, type TravelProduct, type TravelProductStatus } from "../../services/travelProductService";
-import StaffHeader from "./StaffHeader";
+import StaffHeader from "../../components/StaffHeader";
 import StaffProductStatus from "./StaffProductStatusBadge";
 import { STAFF_PRODUCT_STATUS_COLOR } from "./StaffProductStatusColors";
 import * as S from "./StaffReservationPage.styles";

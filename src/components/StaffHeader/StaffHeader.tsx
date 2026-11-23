@@ -1,7 +1,9 @@
-import * as S from "./StaffPage.styles";
 import { useAuth } from "../../contexts/auth/authContext";
+import * as S from "./StaffHeader.styles";
 
-export default function StaffHeader({ current }: { current: "product" | "reservation" | "stock" | "sms" }) {
+export type StaffHeaderSection = "product" | "reservation" | "stock" | "sms";
+
+export default function StaffHeader({ current }: { current: StaffHeaderSection }) {
   const { signOut } = useAuth();
 
   function logout() {
