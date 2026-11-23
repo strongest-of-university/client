@@ -1,75 +1,114 @@
-# React + TypeScript + Vite
+# 미스터 월드 테마 투어
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+테마 여행 상품을 조회하고 예약할 수 있는 고객용 화면과 상품·예약·재고·문자 발송 내역을 관리하는 직원용 화면을 제공하는 웹 애플리케이션입니다.
 
-Currently, two official plugins are available:
+## 주요 기능
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 고객
 
-## React Compiler
+- 허니문, 효도 힐링, 골프, 아웃도어 트레킹 테마별 상품 조회
+- 날짜, 인원, 등급, 호텔, 교통, 식사, 추가 옵션을 선택한 여행 예약
+- 텍스트 또는 음성 대화를 이용한 여행 상품 추천 및 예약 조건 입력
+- 내 예약과 완료 여행 조회
+- 출발 시점과 서버의 취소 가능 여부에 따른 예약 취소 및 환불 예정 금액 확인
+- 고객 회원가입, 로그인, 회원 정보 조회 및 수정
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 직원
 
-## Expanding the ESLint configuration
+- 여행 상품 등록 및 상태별 상품 조회
+- 상품별 신청 인원, 예약자, 모집 진행 상황 조회
+- 상품 취소
+- 기념품 재고 조회, 수량 변경 및 변경 이력 확인
+- 출발 확정·취소 관련 문자 발송 내역 조회
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 기술 스택
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React 19
+- TypeScript 6
+- Vite 8
+- styled-components
+- React Icons
+- ESLint
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 시작하기
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 요구 사항
 
+- Node.js 20 이상
+- npm
+
+### 설치 및 실행
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+개발 서버는 기본적으로 `http://localhost:5173`에서 실행됩니다. 개발 환경의 `/api` 요청은 Vite 프록시를 통해 백엔드 서버로 전달됩니다.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 환경 변수
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+다른 API 서버를 사용하려면 프로젝트 루트에 `.env.local` 파일을 만들고 다음 값을 설정합니다.
 
+```env
+VITE_API_BASE_URL=https://example.com
+```
+
+`VITE_API_BASE_URL` 끝의 `/`는 생략할 수 있습니다. 값을 설정하지 않으면 개발 환경에서는 Vite 프록시를 사용하고, 배포 환경에서는 프로젝트에 지정된 기본 API 주소를 사용합니다.
+
+## 명령어
+
+| 명령어 | 설명 |
+| --- | --- |
+| `npm run dev` | 개발 서버 실행 |
+| `npm run build` | TypeScript 검사 후 배포 파일 생성 |
+| `npm run lint` | ESLint 정적 검사 |
+| `npm run preview` | 빌드 결과 로컬 미리보기 |
+
+## 주요 경로
+
+| 경로 | 화면 | 접근 권한 |
+| --- | --- | --- |
+| `/` | 홈 | 전체 |
+| `/themes/:theme` | 테마별 상품 | 전체 |
+| `/login` | 로그인 | 전체 |
+| `/signup` | 회원가입 | 전체 |
+| `/reservation` | 예약 방식 선택 | 고객 |
+| `/voice` | 음성·대화 예약 | 고객 |
+| `/booking` | 예약 정보 입력 및 결제 | 고객 |
+| `/mypage` | 예약 내역 및 회원 정보 | 고객 |
+| `/staff` | 상품 등록·조회 | 직원 |
+| `/staff/reservations` | 예약 현황 | 직원 |
+| `/staff/stock` | 재고 관리 | 직원 |
+| `/staff/sms` | 문자 발송 내역 | 직원 |
+
+고객 및 직원 전용 경로는 세션의 액세스 토큰과 회원 역할을 확인하며, 인증되지 않은 사용자는 로그인 화면으로 이동합니다.
+
+## 프로젝트 구조
+
+```text
+src/
+├── api/          # 공통 API 클라이언트와 인증 세션 처리
+├── assets/       # 이미지 등 정적 리소스
+├── components/   # Header, Footer, Modal 등 공통 UI
+├── contexts/     # 인증 및 예약 작성 상태
+├── pages/        # 고객·직원 화면
+├── services/     # 도메인별 API 요청과 응답 타입
+├── styles/       # 전역 스타일
+├── Router.tsx    # 경로 및 접근 권한 분기
+└── main.tsx      # 애플리케이션 진입점
+```
+
+## API 연동
+
+- 모든 요청은 `src/api/client.ts`의 공통 클라이언트를 사용합니다.
+- 로그인 후 받은 액세스 토큰은 `sessionStorage`에 저장되며 요청의 `Authorization: Bearer` 헤더에 포함됩니다.
+- API 응답의 `data` 필드를 공통으로 해제하고, 인증 만료 응답을 받으면 세션을 정리합니다.
+- 일반 요청은 시간 초과를 적용하고 음성 처리 요청은 별도의 긴 제한 시간을 사용합니다.
+
+## 배포 전 확인
+
+```bash
+npm run lint
+npm run build
 ```
